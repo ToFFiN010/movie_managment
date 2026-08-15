@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bookings — CinePrime{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="brand-font text-white mb-0"><i class="fa-solid fa-ticket-simple text-warning me-2"></i>My Bookings</h3>
+    <span class="badge bg-warning text-dark fs-6">{{ bookings.count }} Total Bookings</span>
+</div>
+
+<div class="row row-cols-1 g-3">
+    {% for b in bookings %}
+        <div class="col">
+            <div class="glass-card p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center mb-3 mb-md-0">
+                        <img src="{{ b.show.movie.get_poster_url }}" alt="{{ b.show.movie.title }}" class="rounded-3 shadow-sm" width="90" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="object-fit: cover;">
+                    </div>
+                    <div class="col-md-7">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-warning text-dark">Ref: {{ b.booking_reference }}</span>
+                            {% if b.status == 'CONFIRMED' %}
+                                <span class="badge bg-success">Confirmed</span>
+                            {% elif b.status == 'CANCELLED' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ b.status }}</span>
+                            {% endif %}
+                        </div>
+                        <h5 class="brand-font text-white mb-1">{{ b.show.movie.title }}</h5>
+                        <p class="small text-muted mb-1"><i class="fa-solid fa-building me-1"></i>{{ b.show.theater.name }} — {{ b.show.screen.name }}</p>
+                        <p class="small text-muted mb-2"><i class="fa-solid fa-clock me-1"></i>{{ b.show.show_date|date:"D, M d, Y" }} at {{ b.show.start_time|time:"H:i" }}</p>
+                        <div class="small text-light">
+                            <strong>Seats:</strong> 
+                            {% for bs in b.booked_seats.all %}
+                                <span class="badge bg-dark border border-secondary">{{ bs.seat.label }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                        <h4 class="brand-font text-warning fw-bold mb-2">${{ b.total_amount }}</h4>
+                        {% if b.status == 'CONFIRMED' %}
+                            <div class="d-flex flex-column gap-2">
+                                <a href="{% url 'bookings:download_ticket' b.booking_reference %}" class="btn btn-cinema-gold btn-sm"><i class="fa-solid fa-file-pdf me-1"></i> Download PDF</a>
+                                <a href="{% url 'bookings:cancel_booking' b.booking_reference %}" class="btn btn-outline-danger btn-sm">Cancel Booking</a>
+                                <a href="{% url 'reviews:write_review' b.show.movie.id %}" class="btn btn-sm btn-outline-warning"><i class="fa-solid fa-star me-1"></i> Rate & Review</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="fa-solid fa-ticket fs-1 mb-3"></i>
+            <p>You haven't made any bookings yet.</p>
+            <a href="{% url 'movies:listing' %}" class="btn btn-cinema-gold">Browse Movies</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

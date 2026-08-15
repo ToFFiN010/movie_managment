@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Cinemas & Theaters — CinePrime{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold text-white mb-0"><i class="fa-solid fa-building-user text-warning me-2"></i>Cinemas & Theaters</h3>
+    
+    <form method="GET" class="d-flex align-items-center gap-2">
+        <select name="city" class="quick-booking-select py-2 fs-6" style="min-width: 180px;" onchange="this.form.submit()">
+            <option value="">All Cities</option>
+            {% for c in cities %}
+                <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for theater in theaters %}
+        <div class="col">
+            <div class="cinema-card p-4 h-100 d-flex flex-column" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="fw-bold text-white mb-0">{{ theater.name }}</h5>
+                    <span class="badge bg-warning text-dark fw-bold">{{ theater.city }}</span>
+                </div>
+                <p class="text-secondary small mb-2"><i class="fa-solid fa-location-dot me-1 text-danger"></i>{{ theater.address }}, {{ theater.location }}</p>
+                {% if theater.facilities %}
+                    <div class="d-flex gap-1 flex-wrap mb-3">
+                        {% for f in theater.facilities.split %}
+                            <span class="badge bg-dark border border-secondary text-light opacity-85" style="font-size: 0.72rem;">{{ f }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25">
+                    <span class="small text-secondary fw-semibold"><i class="fa-solid fa-desktop me-1 text-warning"></i>{{ theater.screens.count }} Screens</span>
+                    <a href="{% url 'theaters:detail' theater.id %}" class="btn btn-purple btn-sm">
+                        <i class="fa-solid fa-ticket me-1"></i> View Shows
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5 text-muted cinema-card">
+            <i class="fa-solid fa-building-circle-xmark fs-1 mb-3 text-warning"></i>
+            <h6>No Active Theaters Found</h6>
+            <p class="small mb-0">Please check back later or select another city.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout — {{ booking.booking_reference }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 p-md-5">
+            <h3 class="brand-font text-white mb-4"><i class="fa-solid fa-credit-card text-warning me-2"></i>Complete Payment</h3>
+
+            <!-- Ticket Summary -->
+            <div class="p-3 mb-4 bg-dark rounded-3 border border-secondary">
+                <div class="row align-items-center">
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <img src="{{ booking.show.movie.get_poster_url }}" alt="{{ booking.show.movie.title }}" class="img-fluid rounded-2 shadow-sm" loading="eager" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="max-height: 120px; object-fit: cover;">
+                    </div>
+                    <div class="col-md-9">
+                        <h5 class="brand-font text-white mb-1">{{ booking.show.movie.title }}</h5>
+                        <p class="small text-muted mb-1"><i class="fa-solid fa-building me-1"></i>{{ booking.show.theater.name }} | {{ booking.show.screen.name }} ({{ booking.show.screen.screen_type }})</p>
+                        <p class="small text-muted mb-1"><i class="fa-solid fa-calendar me-1"></i>{{ booking.show.show_date|date:"D, M d, Y" }} at {{ booking.show.start_time|time:"H:i" }}</p>
+                        <span class="badge bg-warning text-dark me-2">Ref: {{ booking.booking_reference }}</span>
+                        <span class="text-light small">Seats: 
+                            {% for bs in seats %}
+                                <strong class="text-warning">{{ bs.seat.label }}</strong>{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-2 text-muted">
+                    <span>Ticket Amount:</span>
+                    <span class="text-white">${{ booking.total_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between fs-5 fw-bold text-white border-top border-secondary pt-2">
+                    <span>Total Payable:</span>
+                    <span class="text-warning">${{ booking.total_amount }}</span>
+                </div>
+            </div>
+
+            <!-- Payment Method Form -->
+            <form method="POST">
+                {% csrf_token %}
+                <h5 class="brand-font text-white mb-3">Select Payment Method</h5>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4">
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_upi" value="UPI" checked>
+                        <label class="btn btn-outline-warning w-100 p-3 text-center" for="pay_upi">
+                            <i class="fa-solid fa-qrcode fs-3 d-block mb-1"></i> UPI / GPay
+                        </label>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_card" value="CREDIT_CARD">
+                        <label class="btn btn-outline-warning w-100 p-3 text-center" for="pay_card">
+                            <i class="fa-solid fa-credit-card fs-3 d-block mb-1"></i> Credit/Debit Card
+                        </label>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_net" value="NET_BANKING">
+                        <label class="btn btn-outline-warning w-100 p-3 text-center" for="pay_net">
+                            <i class="fa-solid fa-landmark fs-3 d-block mb-1"></i> Net Banking
+                        </label>
+                    </div>
+                </div>
+
+                <div class="alert alert-secondary bg-dark text-white border-secondary small mb-4">
+                    <i class="fa-solid fa-shield-halved text-success me-2"></i>Safe Mock Gateway enabled for testing. Clicking pay will confirm booking instantly.
+                </div>
+
+                <button type="submit" class="btn btn-cinema-gold w-100 py-3 fw-bold fs-5">
+                    Pay ${{ booking.total_amount }} Now
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ theater.name }} — CinePrime{% endblock %}
+
+{% block content %}
+<div class="cinema-card p-4 p-md-5 mb-4" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div>
+            <h2 class="fw-bold text-white mb-1">{{ theater.name }}</h2>
+            <p class="text-secondary mb-0"><i class="fa-solid fa-location-dot me-1 text-danger"></i>{{ theater.address }}, {{ theater.location }}, {{ theater.city }}</p>
+        </div>
+        <span class="badge bg-warning text-dark fs-6 fw-bold">{{ theater.screens.count }} Screens</span>
+    </div>
+    {% if theater.facilities %}
+        <div class="d-flex gap-2 flex-wrap mt-2">
+            {% for facility in theater.facilities.split %}
+                <span class="badge bg-dark border border-secondary text-light opacity-90" style="font-size: 0.78rem;">{{ facility }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<h4 class="fw-bold text-white mb-3"><i class="fa-solid fa-ticket text-warning me-2"></i>Shows Running at {{ theater.name }}</h4>
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for show in shows %}
+        <div class="col">
+            <div class="cinema-card p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold text-white mb-1">{{ show.movie.title }}</h6>
+                    <p class="small text-secondary mb-1"><i class="fa-solid fa-desktop me-1 text-warning"></i>{{ show.screen.name }} ({{ show.screen.screen_type }})</p>
+                    <span class="badge bg-purple text-white mt-1" style="background: rgba(139, 92, 246, 0.3); border: 1px solid rgba(139, 92, 246, 0.5);">{{ show.show_date|date:"D, M d" }} @ {{ show.start_time|time:"h:i A" }}</span>
+                </div>
+                <div class="text-end ms-3">
+                    <div class="text-warning fw-bold fs-5 mb-1">₹{{ show.ticket_price }}</div>
+                    <a href="{% url 'bookings:seat_selection' show.id %}" class="btn btn-purple btn-sm">Book Tickets</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-muted py-4 cinema-card text-center">
+            <i class="fa-solid fa-clock-rotate-left fs-2 mb-2 text-warning"></i>
+            <h6>No Active Shows Scheduled</h6>
+            <p class="small mb-0">Please check another date or theater location.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Booking Confirmed — {{ booking.booking_reference }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-7 col-lg-6">
+        <div class="glass-card p-4 p-md-5 text-center">
+            <div class="mb-3">
+                <i class="fa-solid fa-circle-check text-success display-1 mb-2"></i>
+                <h2 class="brand-font text-white fw-bold">Booking Confirmed!</h2>
+                <p class="text-muted">Your tickets have been issued. Enjoy the show!</p>
+            </div>
+
+            <div class="p-4 mb-4 bg-dark rounded-4 border border-secondary text-start">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-warning text-dark fs-6">Ref: {{ booking.booking_reference }}</span>
+                    <span class="badge bg-success">PAID</span>
+                </div>
+                <h4 class="brand-font text-white mb-1">{{ booking.show.movie.title }}</h4>
+                <p class="text-muted mb-2"><i class="fa-solid fa-building me-1"></i>{{ booking.show.theater.name }} — {{ booking.show.screen.name }}</p>
+                <div class="row g-2 text-light small mb-3">
+                    <div class="col-6"><strong>Date:</strong> {{ booking.show.show_date|date:"D, M d, Y" }}</div>
+                    <div class="col-6"><strong>Time:</strong> {{ booking.show.start_time|time:"H:i" }}</div>
+                    <div class="col-6"><strong>Seats:</strong> 
+                        {% for bs in booking.booked_seats.all %}
+                            <span class="badge bg-secondary">{{ bs.seat.label }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="col-6"><strong>Total Amount:</strong> ${{ booking.total_amount }}</div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 flex-column flex-sm-row">
+                <a href="{% url 'bookings:download_ticket' booking.booking_reference %}" class="btn btn-cinema-gold flex-grow-1 py-2 fw-bold">
+                    <i class="fa-solid fa-file-pdf me-2"></i> Download Digital Ticket (PDF)
+                </a>
+                <a href="{% url 'movies:listing' %}" class="btn btn-cinema-outline py-2">
+                    Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

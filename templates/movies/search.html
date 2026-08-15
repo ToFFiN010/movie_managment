@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results{% if search_query %} for "{{ search_query }}"{% endif %} — CinePrime{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- SEARCH HEADER BANNER -->
+    <div class="cinema-card mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h4 class="fw-bold text-white mb-1">
+                    <i class="fa-solid fa-magnifying-glass text-warning me-2"></i>
+                    {% if search_query %}
+                        Search Results for <span class="text-warning">"{{ search_query }}"</span>
+                    {% else %}
+                        Search Movies
+                    {% endif %}
+                </h4>
+                <p class="text-secondary small mb-0">Discover exact title matches, genre & language related cinema, and trending recommendations.</p>
+            </div>
+
+            {% if search_query %}
+                <span class="badge bg-warning text-dark fs-6 font-semibold py-2 px-3 align-self-start align-self-md-center">
+                    {{ total_found }} Match{% if total_found != 1 %}es{% endif %} Found
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if best_matches %}
+        <!-- 🎯 BEST MATCH SECTION -->
+        <div class="mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold text-white mb-0">
+                    <i class="fa-solid fa-bullseye text-warning me-2"></i>Best Match{% if best_matches|length > 1 %}es{% endif %}
+                </h5>
+                <span class="text-muted small">Ranked by search relevance</span>
+            </div>
+
+            <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4">
+                {% for movie in best_matches %}
+                    <div class="col">
+                        {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 🎬 RELATED MOVIES SECTION -->
+        {% if related_movies %}
+            <div class="mb-5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="fa-solid fa-film text-warning me-2"></i>Related Movies
+                    </h5>
+                    <span class="text-muted small">Based on matching genre, language & director</span>
+                </div>
+
+                <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4">
+                    {% for movie in related_movies %}
+                        <div class="col">
+                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- 🔥 TRENDING MOVIES SECTION (Optional Fallback) -->
+        {% if trending_movies and related_movies|length < 4 %}
+            <div class="mb-5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="fa-solid fa-fire text-warning me-2"></i>Trending Movies
+                    </h5>
+                    <span class="text-muted small">Popular cinema right now</span>
+                </div>
+
+                <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4">
+                    {% for movie in trending_movies %}
+                        <div class="col">
+                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <!-- ❌ NO MATCHING RESULTS STATE -->
+        <div class="cinema-card text-center py-5 mb-5">
+            <i class="fa-solid fa-magnifying-glass-slash fs-1 text-warning mb-3"></i>
+            <h5 class="text-white fw-bold">No Movies Found</h5>
+            {% if search_query %}
+                <p class="text-secondary small mb-4">We couldn't find any movie title or record matching <strong class="text-light">"{{ search_query }}"</strong>. Try checking your spelling or searching for another genre or director.</p>
+            {% else %}
+                <p class="text-secondary small mb-4">Please type a movie title, genre, or keyword into the search bar above.</p>
+            {% endif %}
+            <a href="{% url 'movies:listing' %}" class="btn btn-gold btn-sm px-4">
+                <i class="fa-solid fa-film me-1"></i> Browse All Movies
+            </a>
+        </div>
+
+        <!-- 🌟 YOU MAY ALSO LIKE SECTION -->
+        {% if trending_movies %}
+            <div class="mb-5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="fa-solid fa-star text-warning me-2"></i>You May Also Like
+                    </h5>
+                    <span class="text-muted small">Recommended movies on CinePrime</span>
+                </div>
+
+                <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4">
+                    {% for movie in trending_movies %}
+                        <div class="col">
+                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+</div>
+{% endblock %}

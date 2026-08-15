@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Account — CinePrime Cinemas{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="auth-card" style="max-width: 500px;">
+        <div class="text-center mb-3">
+            <i class="fa-solid fa-user-plus auth-header-icon" aria-hidden="true"></i>
+            <h1 class="auth-title">Join CinePrime</h1>
+            <p class="auth-subtitle">Create your account to unlock movie bookings & ratings</p>
+        </div>
+
+        {% if form.errors %}
+            <div class="auth-alert-danger" role="alert">
+                <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
+                <div>Please check your registration details below.</div>
+            </div>
+        {% endif %}
+
+        <form method="POST" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="id_username" class="auth-label">
+                    <span>Username <span class="required-star">*</span></span>
+                </label>
+                <div class="auth-input-group">
+                    <span class="auth-input-icon"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" name="username" id="id_username" class="auth-control" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" required>
+                </div>
+                {% if form.username.errors %}<div class="text-danger small mt-1" style="color: #FF5C5C !important;">{{ form.username.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_email" class="auth-label">
+                    <span>Email Address <span class="required-star">*</span></span>
+                </label>
+                <div class="auth-input-group">
+                    <span class="auth-input-icon"><i class="fa-solid fa-envelope"></i></span>
+                    <input type="email" name="email" id="id_email" class="auth-control" placeholder="Email Address" value="{{ form.email.value|default:'' }}" required>
+                </div>
+                {% if form.email.errors %}<div class="text-danger small mt-1" style="color: #FF5C5C !important;">{{ form.email.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="id_first_name" class="auth-label"><span>First Name</span></label>
+                    <div class="auth-input-group">
+                        <input type="text" name="first_name" id="id_first_name" class="auth-control ps-3" placeholder="First Name" value="{{ form.first_name.value|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <label for="id_last_name" class="auth-label"><span>Last Name</span></label>
+                    <div class="auth-input-group">
+                        <input type="text" name="last_name" id="id_last_name" class="auth-control ps-3" placeholder="Last Name" value="{{ form.last_name.value|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_password1" class="auth-label">
+                    <span>Password <span class="required-star">*</span></span>
+                </label>
+                <div class="auth-input-group">
+                    <span class="auth-input-icon"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" name="password1" id="id_password1" class="auth-control" placeholder="Password" required>
+                </div>
+                {% if form.password1.errors %}<div class="text-danger small mt-1" style="color: #FF5C5C !important;">{{ form.password1.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label for="id_password2" class="auth-label">
+                    <span>Confirm Password <span class="required-star">*</span></span>
+                </label>
+                <div class="auth-input-group">
+                    <span class="auth-input-icon"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" name="password2" id="id_password2" class="auth-control" placeholder="Confirm Password" required>
+                </div>
+                {% if form.password2.errors %}<div class="text-danger small mt-1" style="color: #FF5C5C !important;">{{ form.password2.errors.0 }}</div>{% endif %}
+            </div>
+
+            <button type="submit" class="btn-auth-submit">
+                <i class="fa-solid fa-user-check me-1"></i> Create Account
+            </button>
+        </form>
+
+        <div class="text-center mt-4 pt-2 border-top border-secondary border-opacity-25">
+            <p class="auth-secondary-text mb-0">
+                Already registered? 
+                <a href="{% url 'accounts:login' %}" class="auth-link">Sign In</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

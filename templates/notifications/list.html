@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications — CinePrime{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="brand-font text-white mb-0"><i class="fa-solid fa-bell text-warning me-2"></i>Notifications</h3>
+    <a href="{% url 'notifications:mark_all_read' %}" class="btn btn-cinema-outline btn-sm"><i class="fa-solid fa-check-double me-1"></i> Mark All as Read</a>
+</div>
+
+<div class="row row-cols-1 g-3">
+    {% for n in notifications %}
+        <div class="col">
+            <div class="glass-card p-3 d-flex justify-content-between align-items-center {% if not n.is_read %}border-warning{% endif %}">
+                <div>
+                    <h6 class="brand-font text-white mb-1">
+                        {% if not n.is_read %}<span class="badge bg-warning text-dark me-2">NEW</span>{% endif %}
+                        {{ n.title }}
+                    </h6>
+                    <p class="small text-muted mb-0">{{ n.message }}</p>
+                    <span class="text-secondary" style="font-size: 0.75rem;">{{ n.created_at|date:"M d, Y @ H:i" }}</span>
+                </div>
+                {% if not n.is_read %}
+                    <a href="{% url 'notifications:mark_read' n.id %}" class="btn btn-sm btn-cinema-gold py-1 px-3">Mark Read</a>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="fa-regular fa-bell fs-1 mb-3"></i>
+            <p>You have no notifications right now.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

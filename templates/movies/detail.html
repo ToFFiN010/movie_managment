@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ movie.title }} — CinePrime{% endblock %}
+
+{% block content %}
+<!-- Hero Backdrop -->
+<div class="hero-backdrop mb-4" style="background-image: url('{{ movie.get_backdrop_url }}');">
+    <div class="hero-overlay">
+        <div class="row align-items-end w-100">
+            <div class="col-md-3 d-none d-md-block">
+                <img src="{{ movie.get_poster_url }}" alt="{{ movie.title }}" class="img-fluid rounded-4 shadow-lg border border-secondary" loading="eager" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="max-height: 350px; object-fit: cover;">
+            </div>
+            <div class="col-md-9 text-white">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="badge bg-warning text-dark fs-6"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating|default:"0.0" }} / 5</span>
+                    <span class="badge bg-secondary">{{ movie.age_certification }}</span>
+                    <span class="badge bg-outline-light border">{{ movie.language.name }}</span>
+                    <span class="text-muted small"><i class="fa-regular fa-clock me-1"></i>{{ movie.duration_minutes }} mins</span>
+                </div>
+                <h1 class="brand-font display-4 fw-extrabold mb-2">{{ movie.title }}</h1>
+                <p class="text-light opacity-75 mb-3">{{ movie.short_description|default:movie.description|truncatewords:25 }}</p>
+
+                <div class="d-flex gap-3 flex-wrap align-items-center">
+                    {% if movie.youtube_video_id %}
+                        <button type="button" class="btn btn-cinema-gold" data-bs-toggle="modal" data-bs-target="#trailerModal">
+                            <i class="fa-solid fa-play me-2"></i> WATCH TRAILER
+                        </button>
+                    {% endif %}
+
+                    <a href="{% url 'bookings:booking_movie' movie.id %}" class="btn btn-warning fw-bold px-4 rounded-3"><i class="fa-solid fa-ticket me-2"></i> BOOK TICKETS</a>
+
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'movies:watchlist_toggle' movie.id %}" class="btn {% if in_watchlist %}btn-warning{% else %}btn-cinema-outline{% endif %}">
+                            <i class="fa-solid fa-bookmark me-1"></i> {% if in_watchlist %}In Watchlist{% else %}Add to Watchlist{% endif %}
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Content Left Column -->
+    <div class="col-lg-8">
+
+        <!-- About Movie -->
+        <div class="glass-card p-4 mb-4">
+            <h4 class="brand-font text-white mb-3"><i class="fa-solid fa-circle-info text-warning me-2"></i>About the Movie</h4>
+            <p class="text-light opacity-90 leading-relaxed">{{ movie.description }}</p>
+            <div class="row g-3 mt-2 text-muted small">
+                <div class="col-6 col-md-4">
+                    <strong class="text-white d-block">Director:</strong> {{ movie.director }}
+                </div>
+                <div class="col-6 col-md-4">
+                    <strong class="text-white d-block">Release Date:</strong> {{ movie.release_date|date:"F d, Y" }}
+                </div>
+                <div class="col-12 col-md-4">
+                    <strong class="text-white d-block">Genres:</strong>
+                    {% for g in movie.genres.all %}
+                        <span class="badge bg-secondary me-1">{{ g.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Show Schedules -->
+        <div id="available-shows" class="glass-card p-4 mb-4">
+            <h4 class="brand-font text-white mb-3"><i class="fa-solid fa-clock text-warning me-2"></i>Available Showtimes</h4>
+            {% if shows %}
+                <div class="row row-cols-1 row-cols-md-2 g-3">
+                    {% for show in shows %}
+                        <div class="col">
+                            <div class="p-3 rounded-3 bg-dark border border-secondary d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="brand-font text-white mb-1">{{ show.theater.name }}</h6>
+                                    <p class="small text-muted mb-0"><i class="fa-solid fa-desktop me-1"></i>{{ show.screen.name }} ({{ show.screen.screen_type }})</p>
+                                    <span class="badge bg-warning text-dark mt-1">{{ show.show_date|date:"D, M d" }} @ {{ show.start_time|time:"H:i" }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-warning fw-bold fs-5 mb-1">${{ show.ticket_price }}</div>
+                                    <a href="{% url 'bookings:seat_selection' show.id %}" class="btn btn-cinema-gold btn-sm">Select Seats</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No active show schedules available for this movie right now.</p>
+            {% endif %}
+        </div>
+
+        <!-- Cast & Crew -->
+        {% if movie.cast_members.exists %}
+        <div class="glass-card p-4 mb-4">
+            <h4 class="brand-font text-white mb-3"><i class="fa-solid fa-users text-warning me-2"></i>Cast & Crew</h4>
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+                {% for mc in movie.cast_members.all %}
+                    <div class="col text-center">
+                        <div class="p-2 rounded-3 bg-dark border border-secondary">
+                            {% if mc.cast_member.profile_image %}
+                                <img src="{{ mc.cast_member.profile_image.url }}" class="rounded-circle mb-2" width="70" height="70" style="object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-2" style="width: 70px; height: 70px;">
+                                    <i class="fa-solid fa-user fs-3 text-dark"></i>
+                                </div>
+                            {% endif %}
+                            <h6 class="brand-font text-white mb-0 text-truncate" title="{{ mc.cast_member.name }}">{{ mc.cast_member.name }}</h6>
+                            <p class="small text-muted mb-0 text-truncate">{{ mc.character_name|default:mc.role }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Movie Gallery Photos -->
+        {% if movie.images.exists %}
+        <div class="glass-card p-4 mb-4">
+            <h4 class="brand-font text-white mb-3"><i class="fa-solid fa-images text-warning me-2"></i>Photos & Gallery</h4>
+            <div class="row row-cols-2 row-cols-md-3 g-3">
+                {% for img in movie.images.all %}
+                    <div class="col">
+                        <img src="{{ img.image.url }}" class="img-fluid rounded-3 border border-secondary" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="height: 150px; width: 100%; object-fit: cover;">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ratings & Reviews -->
+        <div class="glass-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="brand-font text-white mb-0"><i class="fa-solid fa-star text-warning me-2"></i>Ratings & Reviews</h4>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'reviews:write_review' movie.id %}" class="btn btn-cinema-gold btn-sm"><i class="fa-solid fa-pen me-1"></i> Write Review</a>
+                {% endif %}
+            </div>
+
+            <!-- Rating Breakdown -->
+            <div class="row align-items-center mb-4">
+                <div class="col-md-4 text-center border-end border-secondary py-2">
+                    <h1 class="display-3 brand-font text-warning fw-bold mb-0">{{ movie.average_rating|default:"0.0" }}</h1>
+                    <div class="text-warning mb-1">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span class="text-muted small">Based on {{ movie.total_reviews }} reviews</span>
+                </div>
+                <div class="col-md-8 px-md-4">
+                    {% for star, pct in rating_percentages.items %}
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="small text-muted me-2" style="width: 30px;">{{ star }} ★</span>
+                            <div class="progress flex-grow-1 bg-dark" style="height: 8px;">
+                                <div class="progress-bar bg-warning" role="progressbar" data-pct="{{ pct }}" style="width: 0%;"></div>
+                            </div>
+                            <span class="small text-muted ms-2" style="width: 40px;">{{ pct }}%</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Review Items -->
+            {% for r in reviews %}
+                <div class="p-3 mb-3 bg-dark rounded-3 border border-secondary">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <strong class="text-white me-2">{{ r.user.get_full_name|default:r.user.username }}</strong>
+                            {% if r.is_verified_viewer %}
+                                <span class="badge-verified"><i class="fa-solid fa-check-circle me-1"></i>VERIFIED VIEWER</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <span class="text-warning fw-bold me-2">{{ r.rating }} ★</span>
+                            <a href="{% url 'reviews:report_review' r.id %}" class="text-muted small text-decoration-none" title="Report Review"><i class="fa-solid fa-flag text-danger"></i></a>
+                        </div>
+                    </div>
+                    <p class="text-light opacity-90 mb-1 small">{{ r.review_text }}</p>
+                    <span class="text-muted style-italic" style="font-size: 0.75rem;">Posted on {{ r.created_at|date:"M d, Y" }}</span>
+                </div>
+            {% empty %}
+                <p class="text-muted text-center py-3">No reviews submitted yet for this movie.</p>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <!-- Right Sidebar Column: Recommendations -->
+    <div class="col-lg-4">
+        {% if similar_movies %}
+        <div class="glass-card p-4">
+            <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-masks-theater text-warning me-2"></i>Similar Movies</h5>
+            <div class="d-flex flex-column gap-3">
+                {% for sm in similar_movies %}
+                    <div class="d-flex gap-3 align-items-center">
+                        <img src="{{ sm.get_poster_url }}" alt="{{ sm.title }}" class="rounded-2" width="60" height="85" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="brand-font text-white mb-1 text-truncate"><a href="{% url 'movies:detail' slug=sm.slug %}" class="text-white text-decoration-none">{{ sm.title }}</a></h6>
+                            <span class="text-warning small fw-bold"><i class="fa-solid fa-star me-1"></i>{{ sm.average_rating }}</span>
+                            <span class="text-muted small ms-2">{{ sm.language.name }}</span>
+                            <div class="mt-1">
+                                <a href="{% url 'movies:detail' slug=sm.slug %}" class="btn btn-cinema-gold btn-sm py-0 px-2 fs-7">Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Safe YouTube Trailer Modal -->
+{% if movie.youtube_video_id %}
+<div class="modal fade" id="trailerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title brand-font text-white"><i class="fa-solid fa-play text-warning me-2"></i>{{ movie.title }} — Official Trailer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9">
+                    <iframe src="https://www.youtube-nocookie.com/embed/{{ movie.youtube_video_id }}" title="YouTube trailer" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.progress-bar[data-pct]').forEach(function(bar) {
+        bar.style.width = bar.getAttribute('data-pct') + '%';
+    });
+});
+</script>
+{% endblock %}

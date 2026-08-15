@@ -1,0 +1,74 @@
+<div class="movie-card-container">
+    <div class="movie-card-3d card-variant-{% if card_index %}{{ card_index }}{% else %}0{% endif %}"
+         data-open-modal="details"
+         data-id="{{ movie.id }}"
+         data-title="{{ movie.title }}"
+         data-poster="{{ movie.get_poster_url }}"
+         data-backdrop="{{ movie.get_backdrop_url }}"
+         data-rating="{{ movie.average_rating|default:'8.6' }}"
+         data-year="{{ movie.release_date|date:'Y' }}"
+         data-duration="{{ movie.duration_minutes }}"
+         data-age="{{ movie.age_certification }}"
+         data-lang="{{ movie.language.name }}"
+         data-director="{{ movie.director }}"
+         data-description="{{ movie.description }}"
+         data-genres="{% for g in movie.genres.all %}{{ g.name }}{% if not forloop.last %},{% endif %}{% endfor %}"
+         data-trailer="{{ movie.trailer_url|default:'' }}"
+         data-book-url="{% if movie.shows.exists %}{% url 'bookings:seat_selection' movie.shows.first.id %}{% else %}{% url 'bookings:booking_movie' movie.id %}{% endif %}">
+        
+        <!-- Glass Sweep Shine Animation Layer -->
+        <div class="shine-effect"></div>
+
+        <!-- Poster & Badges Wrapper -->
+        <div class="poster-wrapper">
+            <img src="{{ movie.get_poster_url }}" class="movie-poster-img" alt="{{ movie.title }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="object-fit: cover; aspect-ratio: 2 / 3; width: 100%; border-radius: 20px 20px 0 0;">
+
+            {% if show_badge or movie.status == 'NOW_SHOWING' %}
+                <span class="badge-now-showing">NOW SHOWING</span>
+            {% elif movie.status == 'UPCOMING' %}
+                <span class="badge-now-showing" style="background: rgba(255, 176, 0, 0.9); color: #070B12;">COMING SOON</span>
+            {% endif %}
+
+            <span class="badge-rating"><i class="fa-solid fa-star me-1 text-warning"></i>{{ movie.average_rating|default:"8.6" }}</span>
+
+            <!-- Hover Actions Overlay -->
+            <div class="poster-actions-overlay">
+                {% if movie.trailer_url %}
+                    <button class="btn btn-outline-light btn-sm w-100 py-1 mb-1 border-0 bg-dark opacity-90 text-cyan fw-semibold"
+                            data-open-modal="trailer"
+                            data-title="{{ movie.title }}"
+                            data-trailer="{{ movie.trailer_url }}">
+                        <i class="fa-solid fa-play me-1 text-cyan"></i> Watch Trailer
+                    </button>
+                {% endif %}
+                <button class="btn btn-purple btn-sm w-100 py-1 fw-semibold">
+                    <i class="fa-solid fa-circle-info me-1"></i> View Details
+                </button>
+            </div>
+        </div>
+        
+        <!-- Card Body Metadata -->
+        <div class="p-3 d-flex flex-column flex-grow-1" style="background: rgba(15, 23, 34, 0.65); backdrop-filter: blur(16px); border-radius: 0 0 24px 24px;">
+            <h6 class="text-white text-truncate fw-bold mb-1" style="font-size: 0.9rem;" title="{{ movie.title }}">{{ movie.title }}</h6>
+            
+            <div class="small text-secondary mb-2" style="font-size: 0.75rem;">
+                <span class="text-warning fw-bold">⭐ {{ movie.average_rating|default:"8.6" }}</span> • <span>{{ movie.release_date|date:"Y" }}</span> • <span>{{ movie.duration_minutes }} min</span>
+            </div>
+
+            <div class="mb-3">
+                {% for g in movie.genres.all|slice:":2" %}
+                    <span class="badge bg-dark border border-secondary text-light opacity-90 me-1" style="font-size: 0.65rem; font-weight: 500;">{{ g.name }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- Book Now CTA -->
+            <div class="mt-auto d-grid">
+                <a href="{% url 'bookings:booking_movie' movie.id %}" class="btn btn-neon-glass btn-sm py-1-5 fw-bold" onclick="event.stopPropagation();">
+                    <i class="fa-solid fa-ticket me-1"></i> Book Now
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+

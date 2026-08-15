@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile — CinePrime{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-8 col-lg-6">
+        <div class="glass-card p-4 p-md-5">
+            <div class="d-flex align-items-center mb-4">
+                {% if profile.profile_picture %}
+                    <img src="{{ profile.profile_picture.url }}" class="rounded-circle me-3 border border-warning" width="80" height="80" style="object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-dark border border-warning d-flex align-items-center justify-content-center me-3" style="width: 80px; height: 80px;">
+                        <i class="fa-solid fa-user text-warning fs-1"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <h3 class="brand-font text-white mb-0">{{ user.get_full_name|default:user.username }}</h3>
+                    <p class="text-muted mb-0"><i class="fa-solid fa-envelope me-1"></i>{{ user.email }}</p>
+                    <span class="badge bg-warning text-dark mt-1">{{ user.get_role_display }}</span>
+                </div>
+            </div>
+
+            <hr class="border-secondary mb-4">
+
+            <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-pen-to-square me-2 text-warning"></i>Edit Profile</h5>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">Phone Number</label>
+                    {{ form.phone }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">Address</label>
+                    {{ form.address }}
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">Profile Picture</label>
+                    {{ form.profile_picture }}
+                </div>
+                <button type="submit" class="btn btn-cinema-gold w-100">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

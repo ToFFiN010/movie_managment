@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}My Watchlist — CinePrime{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="brand-font text-white mb-0"><i class="fa-solid fa-bookmark text-warning me-2"></i>My Watchlist</h3>
+    <span class="badge bg-warning text-dark fs-6">{{ watchlist_items.count }} Movies</span>
+</div>
+
+<div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4">
+    {% for item in watchlist_items %}
+        {% include 'movies/_movie_card.html' with movie=item.movie %}
+    {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="fa-solid fa-bookmark fs-1 mb-3"></i>
+            <p>Your watchlist is empty. Explore movies and click 'Add to Watchlist'!</p>
+            <a href="{% url 'movies:listing' %}" class="btn btn-cinema-gold">Explore Movies</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

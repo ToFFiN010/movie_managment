@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Movie Theaters — CinePrime{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    
+    <!-- PAGE HEADER & FILTER BANNER -->
+    <div class="cinema-card mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h3 class="fw-bold text-white mb-1"><i class="fa-solid fa-building-user text-warning me-2"></i>Movie Theaters</h3>
+                <p class="text-secondary small mb-0">Browse partner cinemas, multiplex screens, and live show schedules.</p>
+            </div>
+
+            <!-- SEARCH & CITY FILTER FORM -->
+            <form method="GET" action="{% url 'movies:theaters' %}" class="d-flex flex-wrap gap-2 align-items-center">
+                <div class="position-relative">
+                    <input type="text" name="q" class="quick-booking-select py-1" style="min-width: 220px;" placeholder="Search theater name or city..." value="{{ search_query|default:'' }}">
+                </div>
+
+                <select name="city" class="quick-booking-select py-1" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">All Cities</option>
+                    {% for c in cities %}
+                        <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="btn btn-gold btn-sm">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- THEATER CARDS GRID -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
+        {% for theater in theaters %}
+            <div class="col">
+                <div class="cinema-card h-100 d-flex flex-direction-column justify-content-between" style="border-color: rgba(255, 176, 0, 0.2);">
+                    <div>
+                        <!-- Header & City Badge -->
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold text-white mb-0">{{ theater.name }}</h5>
+                            <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.7rem;">{{ theater.city }}</span>
+                        </div>
+
+                        <!-- Address & Location -->
+                        <div class="small text-secondary mb-3">
+                            <i class="fa-solid fa-location-dot text-warning me-1"></i> {{ theater.address }}
+                        </div>
+
+                        <!-- Screens & Capacities -->
+                        <div class="mb-3">
+                            <div class="small text-muted mb-1 fw-semibold"><i class="fa-solid fa-display me-1 text-warning"></i> Screens & Format:</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for screen in theater.screens.all %}
+                                    <span class="badge bg-dark border border-secondary text-light" style="font-size: 0.72rem;">
+                                        {{ screen.name }} ({{ screen.screen_type }}) • {{ screen.capacity }} Seats
+                                    </span>
+                                {% empty %}
+                                    <span class="badge bg-secondary">Standard Screen</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Facilities Chips -->
+                        {% if theater.facilities %}
+                            <div class="mb-3">
+                                <div class="small text-muted mb-1 fw-semibold"><i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i> Amenities:</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for f in theater.facilities.split %}
+                                        <span class="badge bg-secondary opacity-75" style="font-size: 0.68rem;">{{ f }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Active Show Schedules -->
+                        <div class="mb-3">
+                            <div class="small text-muted mb-1 fw-semibold"><i class="fa-solid fa-clock me-1 text-warning"></i> Currently Playing Shows:</div>
+                            <div class="d-flex flex-column gap-1">
+                                {% for show in active_shows %}
+                                    {% if show.theater.id == theater.id %}
+                                        <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded-2 border border-secondary" style="font-size: 0.78rem;">
+                                            <span class="text-white fw-bold truncate-1" style="max-width: 170px;">{{ show.movie.title }}</span>
+                                            <span class="text-warning small">{{ show.start_time|time:"H:i" }}</span>
+                                            <a href="{% url 'bookings:seat_selection' show.id %}" class="btn btn-gold btn-sm py-0 px-2" style="font-size: 0.7rem;">Book</a>
+                                        </div>
+                                    {% endif %}
+                                {% empty %}
+                                    <span class="text-muted small">No active showtimes currently listed.</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="pt-3 border-top border-secondary d-flex gap-2">
+                        <a href="{% url 'movies:listing' %}" class="btn btn-dark-outline btn-sm w-100 py-1" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-film me-1"></i> View Movies
+                        </a>
+                        <a href="{% url 'movies:listing' %}" class="btn btn-gold btn-sm w-100 py-1" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-ticket me-1"></i> Book Show
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center py-5 text-muted">
+                <i class="fa-solid fa-building-circle-xmark fs-1 mb-3 text-warning"></i>
+                <h5>No Theaters Found</h5>
+                <p class="small">No cinema locations match your current search or city filter.</p>
+                <a href="{% url 'movies:theaters' %}" class="btn btn-gold btn-sm">Reset Filters</a>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

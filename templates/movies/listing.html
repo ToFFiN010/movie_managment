@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+
+{% block title %}CinePrime — Professional Cinema Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <!-- MAIN CENTRAL CONTENT CANVAS (Flexible ~70% width) -->
+    <div class="col-xl-9 col-lg-8">
+
+        <!-- SEARCH / FILTER ACTIVE NOTIFICATION -->
+        {% if total_found is not None %}
+            <div class="d-flex justify-content-between align-items-center mb-4 cinema-card">
+                <h5 class="mb-0 text-white"><i class="fa-solid fa-list-check text-warning me-2"></i>Filter Results</h5>
+                <span class="badge bg-warning text-dark fs-6">{{ total_found }} Movies Found</span>
+            </div>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mb-5">
+                {% for movie in movies %}
+                    {% include 'movies/_movie_card.html' with movie=movie %}
+                {% empty %}
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="fa-solid fa-film fs-1 mb-3"></i>
+                        <p>No movies matched your filter criteria.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+
+            <!-- 🎬 MAIN HERO BANNER SLIDER -->
+            {% if hero_movies %}
+            <div id="heroMovieCarousel" class="carousel slide hero-slider-card mb-4" data-bs-ride="carousel" style="border-radius: 18px; overflow: hidden; position: relative;">
+                <div class="carousel-inner" style="border-radius: 18px; overflow: hidden;">
+                    {% for movie in hero_movies %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <div class="hero-slider-card position-relative w-100" style="height: 380px; overflow: hidden; border-radius: 18px;">
+                                <!-- Hero Background Image (Fills 100% Box Cover) -->
+                                <img src="{{ movie.get_backdrop_url }}" alt="{{ movie.title }}" 
+                                     {% if forloop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async"
+                                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: 1; display: block; filter: brightness(0.92) contrast(1.05) saturate(1.05);" 
+                                     onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';">
+                                
+                                <!-- Dark Gradient Overlay for Readability -->
+                                <div class="hero-overlay-dark p-4 p-md-5" 
+                                     style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.75) 35%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.15) 100%); z-index: 2; display: flex; flex-direction: column; justify-content: center;">
+                                    
+                                    <div class="row align-items-center h-100" style="position: relative; z-index: 3;">
+                                        <div class="col-lg-8">
+                                            <div class="hero-meta-badge mb-2">
+                                                <i class="fa-solid fa-ticket text-warning"></i> NOW PLAYING IN CINEMAS
+                                            </div>
+                                            <h1 class="display-4 fw-extrabold text-white mb-2" style="font-weight: 800; letter-spacing: -0.02em;">{{ movie.title }}</h1>
+                                            
+                                            <div class="d-flex align-items-center gap-2 flex-wrap mb-3 text-secondary small fw-semibold">
+                                                <span class="badge bg-warning text-dark fw-bold px-2 py-1"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating|default:"8.7" }}/10</span>
+                                                <span class="badge bg-dark border border-secondary text-light">{{ movie.release_date|date:"Y" }}</span>
+                                                <span class="badge bg-dark border border-secondary text-light">{{ movie.duration_minutes }}m</span>
+                                                <span class="badge bg-purple text-white" style="background: rgba(139, 92, 246, 0.3); border: 1px solid rgba(139, 92, 246, 0.5);">{{ movie.age_certification }}</span>
+                                                <span class="badge bg-cyan text-white" style="background: rgba(6, 182, 212, 0.3); border: 1px solid rgba(6, 182, 212, 0.5);">{{ movie.language.name }}</span>
+                                                {% for g in movie.genres.all|slice:":3" %}
+                                                    <span class="badge bg-dark border border-secondary text-secondary">{{ g.name }}</span>
+                                                {% endfor %}
+                                            </div>
+
+                                            <p class="text-light opacity-75 mb-4 d-none d-md-block" style="max-width: 580px; font-size: 0.92rem; line-height: 1.6;">
+                                                {{ movie.short_description|default:movie.description|truncatewords:25 }}
+                                            </p>
+
+                                            <div class="d-flex gap-3 flex-wrap">
+                                                <a href="{% url 'bookings:booking_movie' movie.id %}" class="btn btn-purple btn-md fw-bold px-4">
+                                                    <i class="fa-solid fa-ticket me-1"></i> Book Tickets
+                                                </a>
+
+                                                {% if movie.trailer_url %}
+                                                    <button class="btn btn-dark-outline btn-md fw-semibold px-4" 
+                                                            data-open-modal="trailer"
+                                                            data-title="{{ movie.title }}"
+                                                            data-trailer="{{ movie.trailer_url }}">
+                                                        <i class="fa-solid fa-play me-1 text-cyan"></i> Watch Trailer
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <!-- Floating Glass Info Badge Card -->
+                                        <div class="col-lg-4 d-none d-lg-flex flex-column align-items-end justify-content-center">
+                                            <div class="p-3 text-start cinema-card" style="background: rgba(15, 23, 34, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(139, 92, 246, 0.3); width: 220px;">
+                                                <div class="d-flex align-items-center gap-2 mb-2">
+                                                    <i class="fa-solid fa-film fs-4 text-warning"></i>
+                                                    <div>
+                                                        <div class="fw-bold small text-white">IMAX 3D / 4K</div>
+                                                        <div class="text-secondary" style="font-size: 0.72rem;">Dolby Atmos Sound</div>
+                                                    </div>
+                                                </div>
+                                                <div class="pt-2 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center small">
+                                                    <span class="text-secondary">Director</span>
+                                                    <strong class="text-white text-truncate max-w-100" style="max-width: 110px;">{{ movie.director|default:"N/A" }}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+
+                <!-- Carousel Controls & Indicators -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#heroMovieCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#heroMovieCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- 🔥 TRENDING NOW SECTION -->
+            {% if trending %}
+            <div class="mb-5 horizontal-scroll-container">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-fire text-warning me-2"></i>Trending Now</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="scroll-arrow-btn scroll-left-btn" type="button" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="scroll-arrow-btn scroll-right-btn" type="button" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
+                        <a href="{% url 'movies:listing' %}" class="text-warning text-decoration-none small fw-semibold ms-2">View All <i class="fa-solid fa-chevron-right ms-1 fs-7"></i></a>
+                    </div>
+                </div>
+                <div class="horizontal-scroll-row">
+                    {% for movie in trending %}
+                        <div class="movie-card-wrap">
+                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 🎬 NOW SHOWING SECTION -->
+            <div class="mb-5 horizontal-scroll-container">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-film text-warning me-2"></i>Now Showing</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="scroll-arrow-btn scroll-left-btn" type="button" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="scroll-arrow-btn scroll-right-btn" type="button" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
+                        <a href="?status=NOW_SHOWING" class="text-warning text-decoration-none small fw-semibold ms-2">View All <i class="fa-solid fa-chevron-right ms-1 fs-7"></i></a>
+                    </div>
+                </div>
+                <div class="horizontal-scroll-row">
+                    {% for movie in now_showing %}
+                        <div class="movie-card-wrap">
+                            {% include 'movies/_movie_card.html' with movie=movie show_badge=True card_index=forloop.counter0 %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 📅 UPCOMING MOVIES SECTION -->
+            <div class="mb-5 horizontal-scroll-container">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-calendar-days text-warning me-2"></i>Upcoming Movies</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="scroll-arrow-btn scroll-left-btn" type="button" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="scroll-arrow-btn scroll-right-btn" type="button" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
+                        <a href="?status=UPCOMING" class="text-warning text-decoration-none small fw-semibold ms-2">View All <i class="fa-solid fa-chevron-right ms-1 fs-7"></i></a>
+                    </div>
+                </div>
+                <div class="horizontal-scroll-row">
+                    {% for movie in upcoming %}
+                        <div class="movie-card-wrap">
+                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        {% endif %}
+    </div>
+
+    <!-- RIGHT SIDEBAR (Quick Booking, Offers, Top Rated ~300px) -->
+    <div class="col-xl-3 col-lg-4 d-none d-lg-block">
+        
+        <!-- QUICK BOOKING PANEL -->
+        <div class="quick-booking-panel mb-4">
+            <h6 class="fw-bold text-white mb-3"><i class="fa-solid fa-ticket text-warning me-2"></i>QUICK BOOKING</h6>
+            
+            <form id="quickBookingForm">
+                <div class="mb-2">
+                    <label class="small text-muted mb-1">Select Movie</label>
+                    <select class="quick-booking-select" id="quickMovieSelect">
+                        <option value="">Choose Movie...</option>
+                        {% for m in movies %}
+                            <option value="{{ m.id }}">{{ m.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="small text-muted mb-1">Select Theater</label>
+                    <select class="quick-booking-select" id="quickTheaterSelect" disabled>
+                        <option value="">Choose Theater...</option>
+                        {% for t in theaters %}
+                            <option value="{{ t.id }}">{{ t.name }} ({{ t.city }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="small text-muted mb-1">Select Date</label>
+                    <select class="quick-booking-select" id="quickDateSelect" disabled>
+                        <option value="">Choose Date...</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small text-muted mb-1">Select Showtime</label>
+                    <select class="quick-booking-select" id="quickShowSelect" disabled>
+                        <option value="">Choose Showtime...</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn btn-gold w-100 py-2 text-dark font-semibold" onclick="proceedQuickBooking()">
+                    Book Tickets <i class="fa-solid fa-arrow-right ms-1"></i>
+                </button>
+            </form>
+        </div>
+
+
+        <!-- OFFERS & DEALS CARD -->
+        <div class="cinema-card mb-4" style="background: linear-gradient(135deg, #151E29 0%, #0D131C 100%); border-color: rgba(255, 176, 0, 0.3);">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">OFFERS & DEALS</span>
+                <span class="text-muted small">CINE20</span>
+            </div>
+            <h6 class="fw-bold text-white mb-1">Flat 20% OFF</h6>
+            <p class="small text-muted mb-2">Up to $15 on movie tickets with Code <strong>CINE20</strong></p>
+            <span class="text-warning small fw-semibold">Use Code: <strong>CINE20</strong></span>
+        </div>
+
+        <!-- TOP RATED MOVIES LIST -->
+        <div class="cinema-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-white mb-0"><i class="fa-solid fa-star text-warning me-2"></i>TOP RATED MOVIES</h6>
+            </div>
+            
+            <div class="top-rated-list">
+                {% for m in top_rated|slice:":4" %}
+                    <div class="top-rated-item" style="cursor: pointer;"
+                         data-open-modal="details"
+                         data-id="{{ m.id }}"
+                         data-title="{{ m.title }}"
+                         data-poster="{{ m.get_poster_url }}"
+                         data-backdrop="{{ m.get_backdrop_url }}"
+                         data-rating="{{ m.average_rating|default:'8.6' }}"
+                         data-year="{{ m.release_date|date:'Y' }}"
+                         data-duration="{{ m.duration_minutes }}"
+                         data-age="{{ m.age_certification }}"
+                         data-lang="{{ m.language.name }}"
+                         data-director="{{ m.director }}"
+                         data-description="{{ m.description }}"
+                         data-genres="{% for g in m.genres.all %}{{ g.name }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                         data-trailer="{{ m.trailer_url|default:'' }}"
+                         data-book-url="{% if m.shows.exists %}{% url 'bookings:seat_selection' m.shows.first.id %}{% else %}{% url 'movies:detail' slug=m.slug %}{% endif %}">
+                        <img src="{{ m.get_poster_url }}" class="top-rated-thumb" alt="{{ m.title }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <h6 class="text-white small mb-0 text-truncate" title="{{ m.title }}">
+                                <span class="text-white text-decoration-none">{{ m.title }}</span>
+                            </h6>
+                            <div class="small text-warning fw-bold mt-1">
+                                <i class="fa-solid fa-star fs-7 me-1"></i>{{ m.average_rating|default:"8.6" }}
+                                <span class="text-muted ms-1 font-normal fs-7">• {{ m.duration_minutes }}m</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function proceedQuickBooking() {
+    const showSelect = document.getElementById('quickShowSelect');
+    const movieSelect = document.getElementById('quickMovieSelect');
+    const showId = showSelect ? showSelect.value : null;
+    const movieId = movieSelect ? movieSelect.value : null;
+
+    if (showId) {
+        window.location.href = "/bookings/seats/" + showId + "/";
+    } else if (movieId) {
+        window.location.href = "/bookings/movie/" + movieId + "/";
+    } else {
+        alert("Please select a movie to proceed with booking.");
+    }
+}
+</script>
+{% endblock %}
+
