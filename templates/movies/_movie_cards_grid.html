@@ -1,0 +1,65 @@
+{% if movies_page.object_list %}
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-4 row-cols-xl-6 g-2 g-sm-3 g-md-4">
+        {% for movie in movies_page.object_list %}
+            <div class="col">
+                {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if movies_page.paginator.num_pages > 1 %}
+        <div class="d-flex justify-content-center mt-5">
+            <nav aria-label="Movie navigation">
+                <ul class="pagination pagination-md gap-1">
+                    {% if movies_page.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark text-white border-secondary" href="?page={{ movies_page.previous_page_number }}{% if encoded_params %}&{{ encoded_params }}{% endif %}" data-page="{{ movies_page.previous_page_number }}">
+                                <i class="fa-solid fa-chevron-left me-1"></i> Prev
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link bg-dark text-muted border-secondary"><i class="fa-solid fa-chevron-left me-1"></i> Prev</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in movies_page.paginator.page_range %}
+                        {% if movies_page.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link bg-warning text-dark border-warning fw-bold">{{ num }}</span>
+                            </li>
+                        {% elif num > movies_page.number|add:'-3' and num < movies_page.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link bg-dark text-white border-secondary" href="?page={{ num }}{% if encoded_params %}&{{ encoded_params }}{% endif %}" data-page="{{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if movies_page.has_next %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark text-white border-secondary" href="?page={{ movies_page.next_page_number }}{% if encoded_params %}&{{ encoded_params }}{% endif %}" data-page="{{ movies_page.next_page_number }}">
+                                Next <i class="fa-solid fa-chevron-right ms-1"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link bg-dark text-muted border-secondary">Next <i class="fa-solid fa-chevron-right ms-1"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    {% endif %}
+
+{% else %}
+    <!-- Empty State -->
+    <div class="glass-card p-5 text-center my-4">
+        <div class="display-3 mb-3 text-warning">🎬</div>
+        <h4 class="brand-font text-white mb-2">No Movies Found</h4>
+        <p class="text-muted mb-4">No movies match your current search or filters.</p>
+        <a href="{% url 'movies:all_movies' %}" class="btn btn-cinema-gold px-4 fw-bold">
+            <i class="fa-solid fa-rotate-left me-2"></i>Clear Filters
+        </a>
+    </div>
+{% endif %}

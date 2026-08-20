@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -54,7 +55,7 @@ def show_seat_selection_view(request, show_id):
 @login_required
 def create_booking_view(request, show_id):
     """
-    Handles form submission from seat selection to create a pending booking atomically.
+    Handles form submission from seat selection to create a pending booking and Razorpay order atomically.
     Prevents double-booking using select_for_update and database transactions.
     """
     if request.method != 'POST':
@@ -71,55 +72,20 @@ def create_booking_view(request, show_id):
         return redirect('bookings:seat_selection', show_id=show_id)
 
     try:
-        with transaction.atomic():
-            show = ShowSchedule.objects.select_for_update().get(pk=show_id)
+        from .services import PaymentService
+        show = get_object_or_404(ShowSchedule, pk=show_id)
+        seats = list(Seat.objects.filter(id__in=selected_seat_ids, screen=show.screen, is_active=True))
+        if len(seats) != len(selected_seat_ids):
+            messages.error(request, 'Some selected seats are invalid.')
+            return redirect('bookings:seat_selection', show_id=show_id)
 
-            # Check if any selected seat is already booked concurrently
-            already_booked = BookingSeat.objects.filter(
-                booking__show=show,
-                booking__status__in=[Booking.Status.PENDING, Booking.Status.CONFIRMED, Booking.Status.COMPLETED],
-                seat_id__in=selected_seat_ids
-            ).exists()
+        order_data = PaymentService.create_booking_and_razorpay_order(
+            user=request.user,
+            show=show,
+            seats=seats
+        )
 
-            if already_booked:
-                messages.error(request, 'One or more selected seats have already been booked by another user. Please choose available seats.')
-                return redirect('bookings:seat_selection', show_id=show_id)
-
-            # Fetch seats
-            seats = Seat.objects.filter(id__in=selected_seat_ids, screen=show.screen)
-            if len(seats) != len(selected_seat_ids):
-                messages.error(request, 'Some selected seats are invalid.')
-                return redirect('bookings:seat_selection', show_id=show_id)
-
-            # Calculate total amount
-            subtotal = Decimal('0.00')
-            seat_price_tuples = []
-            for seat in seats:
-                seat_cost = (show.ticket_price * seat.price_multiplier).quantize(Decimal('0.01'))
-                subtotal += seat_cost
-                seat_price_tuples.append((seat, seat_cost))
-
-            total_convenience_fee = CONVENIENCE_FEE_PER_TICKET * len(seats)
-            grand_total = subtotal + total_convenience_fee
-
-            # Create Booking
-            booking = Booking.objects.create(
-                user=request.user,
-                show=show,
-                total_amount=grand_total,
-                status=Booking.Status.PENDING,
-                payment_status=Booking.PaymentStatus.PENDING
-            )
-
-            # Create BookingSeat entries
-            for seat, price in seat_price_tuples:
-                BookingSeat.objects.create(
-                    booking=booking,
-                    seat=seat,
-                    price=price
-                )
-
-            return redirect('bookings:checkout', booking_ref=booking.booking_reference)
+        return redirect('bookings:checkout', booking_ref=order_data['booking_reference'])
 
     except Exception as e:
         messages.error(request, f"An error occurred while creating your booking: {str(e)}")
@@ -128,50 +94,44 @@ def create_booking_view(request, show_id):
 
 @login_required
 def booking_checkout_view(request, booking_ref):
+    from django.conf import settings
+    from .services import PaymentService
+
     booking = get_object_or_404(
-        Booking.objects.select_related('show__movie', 'show__theater', 'show__screen').prefetch_related('booked_seats__seat'),
+        Booking.objects.select_related('show__movie', 'show__theater', 'show__screen').prefetch_related('booked_seats__seat', 'payments'),
         booking_reference=booking_ref,
         user=request.user
     )
 
-    if booking.status == Booking.Status.CONFIRMED:
+    if booking.status in [Booking.Status.CONFIRMED, Booking.Status.COMPLETED]:
         return redirect('bookings:confirmation', booking_ref=booking.booking_reference)
 
-    if request.method == 'POST':
-        payment_method = request.POST.get('payment_method', Payment.Method.UPI)
-        
-        # Process Mock Payment Gateway Transaction
-        with transaction.atomic():
-            booking.status = Booking.Status.CONFIRMED
-            booking.payment_status = Booking.PaymentStatus.PAID
-            booking.save()
+    payment = booking.payments.filter(payment_status=Payment.Status.PENDING).order_by('-created_at').first()
+    
+    # If no pending payment or expired, initiate/refresh Razorpay order
+    if not payment or booking.is_expired:
+        try:
+            order_data = PaymentService.retry_payment(request.user, booking.booking_reference)
+            razorpay_order_id = order_data['razorpay_order_id']
+        except Exception as e:
+            messages.error(request, f"Unable to initialize payment: {str(e)}")
+            return redirect('bookings:seat_selection', show_id=booking.show.id)
+    else:
+        razorpay_order_id = payment.gateway_order_id
 
-            txn_id = f"TXN-{timezone.now().strftime('%Y%m%d%H%M%S')}-{booking.id}"
-            Payment.objects.create(
-                booking=booking,
-                transaction_id=txn_id,
-                payment_method=payment_method,
-                amount=booking.total_amount,
-                payment_status=Payment.Status.SUCCESS
-            )
-
-            # Send Notification to User
-            Notification.objects.create(
-                user=request.user,
-                title="Booking Confirmed!",
-                message=f"Your ticket for '{booking.show.movie.title}' at {booking.show.theater.name} (Ref: {booking.booking_reference}) is confirmed.",
-                notification_type=Notification.Type.BOOKING
-            )
-
-        messages.success(request, 'Payment successful! Your tickets are confirmed.')
-        return redirect('bookings:confirmation', booking_ref=booking.booking_reference)
+    razorpay_key_id = getattr(settings, 'RAZORPAY_KEY_ID', 'rzp_test_samplekey123')
+    razorpay_amount_paise = int(Decimal(str(booking.total_amount)) * 100)
 
     context = {
         'booking': booking,
         'seats': booking.booked_seats.all(),
-        'razorpay_key_id': 'rzp_test_samplekey123',
+        'razorpay_key_id': razorpay_key_id,
+        'razorpay_order_id': razorpay_order_id,
+        'razorpay_amount_paise': razorpay_amount_paise,
+        'currency': 'INR',
     }
     return render(request, 'bookings/checkout.html', context)
+
 
 
 @login_required
@@ -186,20 +146,56 @@ def booking_confirmation_view(request, booking_ref):
 
 @login_required
 def download_ticket_pdf_view(request, booking_ref):
+    from django.core.exceptions import PermissionDenied
+    from django.http import FileResponse
+    from bookings.services.ticket_service import TicketService
+
     booking = get_object_or_404(
         Booking.objects.select_related('show__movie', 'show__theater', 'show__screen').prefetch_related('booked_seats__seat'),
-        booking_reference=booking_ref,
-        user=request.user
+        booking_reference=booking_ref
     )
-    pdf_buffer = generate_ticket_pdf(booking)
-    response = HttpResponse(pdf_buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="ticket_{booking.booking_reference}.pdf"'
-    return response
+    
+    # Security Authorization Check: Only booking owner or staff can download ticket
+    if booking.user != request.user and not request.user.is_staff:
+        raise PermissionDenied("You are not authorized to access or download this ticket.")
+
+    ticket = TicketService.generate_pdf_ticket(booking)
+    if ticket.pdf_file and os.path.exists(ticket.pdf_file.path):
+        return FileResponse(
+            open(ticket.pdf_file.path, 'rb'),
+            content_type='application/pdf',
+            as_attachment=True,
+            filename=f"CinePrime_{ticket.ticket_number}.pdf"
+        )
+    else:
+        messages.error(request, "Ticket PDF is currently being generated. Please try again.")
+        return redirect('bookings:my_bookings')
+
+
+def verify_ticket_view(request, qr_token):
+    from bookings.models import Ticket
+    ticket = Ticket.objects.select_related(
+        'booking__user', 'booking__show__movie', 'booking__show__theater', 'booking__show__screen'
+    ).filter(qr_token=qr_token).first()
+
+    is_valid = False
+    booking = None
+    if ticket and ticket.booking and ticket.booking.status in [Booking.Status.CONFIRMED, Booking.Status.COMPLETED]:
+        is_valid = True
+        booking = ticket.booking
+
+    context = {
+        'ticket': ticket,
+        'booking': booking,
+        'is_valid': is_valid,
+        'qr_token': qr_token
+    }
+    return render(request, 'bookings/verify_ticket.html', context)
 
 
 @login_required
 def user_bookings_view(request):
-    bookings = Booking.objects.filter(user=request.user).select_related('show__movie', 'show__theater', 'show__screen').order_by('-created_at')
+    bookings = Booking.objects.filter(user=request.user).select_related('show__movie', 'show__theater', 'show__screen', 'ticket').order_by('-created_at')
     return render(request, 'bookings/my_bookings.html', {'bookings': bookings})
 
 

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Movie Poster & Image Audit Center — CinePrime Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="brand-font text-white mb-1"><i class="fa-solid fa-images text-warning me-2"></i>Movie Image Audit & Diagnostics</h2>
+            <p class="text-secondary mb-0">Complete inspection, integrity verification, format validation, and image diagnostic matrix.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="POST" action="{% url 'admin_movie_image_status' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="repair_all">
+                <button type="submit" class="btn btn-warning fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Repair All Missing Posters</button>
+            </form>
+            <a href="/admin/movies/movie/" class="btn btn-dark-outline"><i class="fa-solid fa-database me-1"></i> Movie Admin</a>
+            <a href="/admin/movie-trailers/" class="btn btn-dark-outline"><i class="fa-solid fa-film me-1"></i> Trailer Audit</a>
+            <a href="/dashboard/admin/" class="btn btn-dark-outline"><i class="fa-solid fa-chart-line me-1"></i> Admin Analytics</a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-6 g-3 mb-4">
+        <div class="col">
+            <a href="?status=all" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'all' %}border-warning{% endif %}">
+                    <span class="text-secondary small d-block">TOTAL MOVIES</span>
+                    <h3 class="brand-font text-white mb-0">{{ total_movies }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=valid" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'valid' %}border-success{% endif %}">
+                    <span class="text-success small d-block">VALID IMAGES</span>
+                    <h3 class="brand-font text-success mb-0">{{ valid_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=placeholder" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'placeholder' %}border-info{% endif %}">
+                    <span class="text-info small d-block">PLACEHOLDERS</span>
+                    <h3 class="brand-font text-info mb-0">{{ placeholder_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=missing" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'missing' %}border-danger{% endif %}">
+                    <span class="text-danger small d-block">MISSING</span>
+                    <h3 class="brand-font text-danger mb-0">{{ missing_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=broken" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'broken' %}border-danger{% endif %}">
+                    <span class="text-warning small d-block">BROKEN PATHS</span>
+                    <h3 class="brand-font text-warning mb-0">{{ broken_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=duplicate" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'duplicate' %}border-warning{% endif %}">
+                    <span class="text-secondary small d-block">DUPLICATES</span>
+                    <h3 class="brand-font text-white mb-0">{{ duplicate_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Diagnostic Audit Table -->
+    <div class="cinema-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h5 class="brand-font text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i>Diagnostic Audit Results</h5>
+            <div class="btn-group btn-group-sm">
+                <a href="?status=all" class="btn {% if selected_status == 'all' %}btn-warning{% else %}btn-outline-secondary{% endif %}">All</a>
+                <a href="?status=valid" class="btn {% if selected_status == 'valid' %}btn-success{% else %}btn-outline-secondary{% endif %}">Valid</a>
+                <a href="?status=placeholder" class="btn {% if selected_status == 'placeholder' %}btn-info{% else %}btn-outline-secondary{% endif %}">Placeholder</a>
+                <a href="?status=missing" class="btn {% if selected_status == 'missing' %}btn-danger{% else %}btn-outline-secondary{% endif %}">Missing</a>
+                <a href="?status=broken" class="btn {% if selected_status == 'broken' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Broken</a>
+                <a href="?status=duplicate" class="btn {% if selected_status == 'duplicate' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Duplicates</a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle border-secondary mb-0">
+                <thead>
+                    <tr class="text-secondary small">
+                        <th>ID</th>
+                        <th>Poster Preview</th>
+                        <th>Movie Title</th>
+                        <th>Release Year</th>
+                        <th>Director</th>
+                        <th>Poster Field Path</th>
+                        <th>Dimensions</th>
+                        <th>Format</th>
+                        <th>File Size</th>
+                        <th>Diagnostic Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in audited_movies %}
+                        <tr>
+                            <td><span class="text-muted fw-bold">#{{ m.id }}</span></td>
+                            <td>
+                                <img src="{{ m.poster_url }}" alt="{{ m.title }} poster" style="width: 48px; height: 72px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';">
+                            </td>
+                            <td><strong class="text-white">{{ m.title }}</strong></td>
+                            <td><span class="text-secondary">{{ m.release_date|date:"Y" }}</span></td>
+                            <td><span class="text-secondary">{{ m.director|default:"N/A" }}</span></td>
+                            <td><code class="text-cyan small">{{ m.poster_name }}</code></td>
+                            <td><span class="text-light small">{{ m.dimensions }}</span></td>
+                            <td><span class="badge bg-dark border border-secondary">{{ m.format }}</span></td>
+                            <td><span class="text-secondary small">{{ m.size_kb }} KB</span></td>
+                            <td>
+                                {% if m.status_code == 'VALID' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>VALID</span>
+                                {% elif m.status_code == 'PLACEHOLDER' %}
+                                    <span class="badge bg-info"><i class="fa-solid fa-paintbrush me-1"></i>PLACEHOLDER</span>
+                                {% elif m.status_code == 'MISSING' %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i>MISSING</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-triangle-exclamation me-1"></i>BROKEN</span>
+                                {% endif %}
+
+                                {% if m.is_duplicate %}
+                                    <span class="badge bg-secondary ms-1"><i class="fa-solid fa-copy me-1"></i>DUPLICATE</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">No movie records match the selected filter status.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

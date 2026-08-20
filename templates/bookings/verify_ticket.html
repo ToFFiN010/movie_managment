@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Ticket Verification — CinePrime{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-lg-7 col-md-9">
+        <div class="glass-card p-4 p-md-5 text-center position-relative">
+            {% if is_valid and booking %}
+                <!-- 🛡️ VALID TICKET BADGE -->
+                <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-20 text-success border border-success rounded-circle p-4 mb-3" style="width: 90px; height: 90px;">
+                    <i class="fa-solid fa-shield-check display-4"></i>
+                </div>
+                
+                <h3 class="brand-font text-white mb-1">TICKET VERIFIED</h3>
+                <span class="badge bg-success fs-6 px-3 py-2 fw-bold mb-4">VALID & ACTIVE</span>
+
+                <!-- Ticket Details Box -->
+                <div class="p-4 bg-dark rounded-3 border border-secondary text-start mb-4">
+                    <div class="row align-items-center mb-3 pb-3 border-bottom border-secondary">
+                        <div class="col-md-3 text-center mb-2 mb-md-0">
+                            <img src="{{ booking.show.movie.get_poster_url }}" alt="{{ booking.show.movie.title }} poster" class="img-fluid rounded shadow-sm" style="max-height: 140px; object-fit: cover;">
+                        </div>
+                        <div class="col-md-9">
+                            <h4 class="brand-font text-white mb-1">{{ booking.show.movie.title }}</h4>
+                            <p class="small text-muted mb-2"><i class="fa-solid fa-clock me-1 text-warning"></i>{{ booking.show.movie.duration_minutes }} mins • {{ booking.show.movie.language.name }}</p>
+                            <span class="badge bg-cinema-gold text-dark font-monospace me-2">Ticket: {{ ticket.ticket_number }}</span>
+                            <span class="badge bg-purple text-white font-monospace">Ref: {{ booking.booking_reference }}</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block fw-bold mb-1">THEATER & SCREEN</span>
+                            <p class="text-white small mb-0"><i class="fa-solid fa-building me-1 text-warning"></i><strong>{{ booking.show.theater.name }}</strong></p>
+                            <p class="text-secondary small mb-0">{{ booking.show.screen.name }} ({{ booking.show.screen.screen_type }})</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block fw-bold mb-1">SHOWTIME</span>
+                            <p class="text-white small mb-0"><i class="fa-solid fa-calendar-day me-1 text-cyan"></i>{{ booking.show.show_date|date:"D, M d, Y" }}</p>
+                            <p class="text-warning small mb-0"><i class="fa-solid fa-clock me-1"></i>{{ booking.show.start_time|time:"I:i A" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block fw-bold mb-1">BOOKED SEATS</span>
+                            <p class="text-warning fw-bold fs-5 mb-0">
+                                {% for bs in booking.booked_seats.all %}
+                                    {{ bs.seat.label }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </p>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block fw-bold mb-1">PASSENGER NAME</span>
+                            <p class="text-white small mb-0"><i class="fa-solid fa-user me-1 text-info"></i>{{ booking.user.get_full_name|default:booking.user.username }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-secondary bg-dark text-muted border-secondary small mb-0">
+                    <i class="fa-solid fa-circle-check text-success me-2"></i>Official CinePrime Digital Pass • Verified via Scanner Token
+                </div>
+
+            {% else %}
+                <!-- ❌ INVALID TICKET BADGE -->
+                <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-20 text-danger border border-danger rounded-circle p-4 mb-3" style="width: 90px; height: 90px;">
+                    <i class="fa-solid fa-triangle-exclamation display-4"></i>
+                </div>
+
+                <h3 class="brand-font text-white mb-1">INVALID OR EXPIRED TICKET</h3>
+                <p class="text-danger fw-bold mb-4">The scanned ticket QR code is invalid, cancelled, or does not exist.</p>
+
+                <div class="p-4 bg-dark rounded-3 border border-danger text-center mb-4">
+                    <p class="text-secondary small mb-0">Security Code Token: <code>{{ qr_token }}</code></p>
+                    <p class="text-muted small mb-0">If you believe this is an error, please visit the cinema customer service box office.</p>
+                </div>
+
+                <a href="{% url 'movies:all_movies' %}" class="btn btn-cinema-gold fw-bold px-4">
+                    <i class="fa-solid fa-film me-2"></i>Browse Movies
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

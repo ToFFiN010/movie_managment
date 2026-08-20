@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Movie Media Health & Control Dashboard — CinePrime Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="brand-font text-white mb-1"><i class="fa-solid fa-heart-pulse text-warning me-2"></i>Movie Media Health Dashboard</h2>
+            <p class="text-secondary mb-0">Unified inspection, validation, TMDb poster repair, official trailer verification, and CSV export.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/movies/movie/" class="btn btn-dark-outline"><i class="fa-solid fa-database me-1"></i> Movie Admin</a>
+            <a href="/admin/movie-images/" class="btn btn-dark-outline"><i class="fa-solid fa-images me-1"></i> Image Audit</a>
+            <a href="/admin/movie-trailers/" class="btn btn-dark-outline"><i class="fa-solid fa-film me-1"></i> Trailer Audit</a>
+            <a href="/dashboard/admin/" class="btn btn-dark-outline"><i class="fa-solid fa-chart-line me-1"></i> Admin Analytics</a>
+        </div>
+    </div>
+
+    <!-- Messages Banner -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Action Bar Buttons Grid -->
+    <div class="cinema-card p-3 mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span class="text-white fw-bold"><i class="fa-solid fa-gears text-warning me-2"></i>Media Repair & Verification Controls:</span>
+            <div class="d-flex gap-2 flex-wrap">
+                <form method="POST" action="{% url 'admin_movie_media_health' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="repair_posters">
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> [Repair Missing Posters]</button>
+                </form>
+
+                <form method="POST" action="{% url 'admin_movie_media_health' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="validate_posters">
+                    <button type="submit" class="btn btn-outline-info btn-sm fw-bold"><i class="fa-solid fa-circle-check me-1"></i> [Validate Posters]</button>
+                </form>
+
+                <form method="POST" action="{% url 'admin_movie_media_health' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="validate_trailers">
+                    <button type="submit" class="btn btn-outline-cyan btn-sm fw-bold"><i class="fa-solid fa-video me-1"></i> [Validate Trailers]</button>
+                </form>
+
+                <form method="POST" action="{% url 'admin_movie_media_health' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="repair_trailers">
+                    <button type="submit" class="btn btn-gold btn-sm fw-bold"><i class="fa-solid fa-screwdriver-wrench me-1"></i> [Repair Trailers]</button>
+                </form>
+
+                <form method="POST" action="{% url 'admin_movie_media_health' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="export_report">
+                    <button type="submit" class="btn btn-success btn-sm fw-bold"><i class="fa-solid fa-file-csv me-1"></i> [Export Media Report]</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Metrics Summary Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+        <div class="col">
+            <div class="cinema-card p-3 text-center border-warning">
+                <span class="text-secondary small d-block">TOTAL MOVIES</span>
+                <h3 class="brand-font text-white mb-0">{{ total_movies }}</h3>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 text-center border-success">
+                <span class="text-success small d-block">POSTERS COMPLETE</span>
+                <h3 class="brand-font text-success mb-0">{{ posters_complete }}</h3>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 text-center border-danger">
+                <span class="text-danger small d-block">POSTERS MISSING / BROKEN</span>
+                <h3 class="brand-font text-danger mb-0">{{ posters_missing|add:broken_posters }}</h3>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 text-center border-info">
+                <span class="text-cyan small d-block">TRAILERS COMPLETE</span>
+                <h3 class="brand-font text-cyan mb-0">{{ trailers_complete }}</h3>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 text-center border-warning">
+                <span class="text-warning small d-block">TRAILERS MISSING / INVALID</span>
+                <h3 class="brand-font text-warning mb-0">{{ trailers_missing|add:trailers_invalid }}</h3>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 text-center border-warning">
+                <span class="text-warning small d-block">MANUAL REVIEW REQUIRED</span>
+                <h3 class="brand-font text-warning mb-0">{{ manual_review_cnt }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+name: CinePrime CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: cineprime_db
+          POSTGRES_USER: cineprime_user
+          POSTGRES_PASSWORD: cineprime_secure_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Database Migrations
+        env:
+          DATABASE_URL: postgres://cineprime_user:cineprime_secure_password@localhost:5432/cineprime_db
+          USE_REDIS: "True"
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          python manage.py migrate
+
+      - name: Run Automated Test Suite (Including Concurrency & Payment Idempotency)
+        env:
+          DATABASE_URL: postgres://cineprime_user:cineprime_secure_password@localhost:5432/cineprime_db
+          USE_REDIS: "True"
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          python manage.py test bookings.tests
+
+  build-docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          tags: cineprime:latest

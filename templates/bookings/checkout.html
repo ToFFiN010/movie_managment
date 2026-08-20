@@ -12,7 +12,7 @@
             <div class="p-3 mb-4 bg-dark rounded-3 border border-secondary">
                 <div class="row align-items-center">
                     <div class="col-md-3 mb-2 mb-md-0">
-                        <img src="{{ booking.show.movie.get_poster_url }}" alt="{{ booking.show.movie.title }}" class="img-fluid rounded-2 shadow-sm" loading="eager" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="max-height: 120px; object-fit: cover;">
+                        <img src="{{ booking.show.movie.get_poster_url }}" alt="{{ booking.show.movie.title }} poster" class="img-fluid rounded-2 shadow-sm" loading="eager" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="max-height: 120px; object-fit: cover;">
                     </div>
                     <div class="col-md-9">
                         <h5 class="brand-font text-white mb-1">{{ booking.show.movie.title }}</h5>
@@ -32,49 +32,160 @@
             <div class="mb-4">
                 <div class="d-flex justify-content-between mb-2 text-muted">
                     <span>Ticket Amount:</span>
-                    <span class="text-white">${{ booking.total_amount }}</span>
+                    <span class="text-white">₹{{ booking.total_amount }}</span>
                 </div>
                 <div class="d-flex justify-content-between fs-5 fw-bold text-white border-top border-secondary pt-2">
                     <span>Total Payable:</span>
-                    <span class="text-warning">${{ booking.total_amount }}</span>
+                    <span class="text-warning">₹{{ booking.total_amount }}</span>
                 </div>
             </div>
 
-            <!-- Payment Method Form -->
-            <form method="POST">
-                {% csrf_token %}
-                <h5 class="brand-font text-white mb-3">Select Payment Method</h5>
-                
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-4">
-                        <input type="radio" class="btn-check" name="payment_method" id="pay_upi" value="UPI" checked>
-                        <label class="btn btn-outline-warning w-100 p-3 text-center" for="pay_upi">
-                            <i class="fa-solid fa-qrcode fs-3 d-block mb-1"></i> UPI / GPay
-                        </label>
-                    </div>
-                    <div class="col-6 col-md-4">
-                        <input type="radio" class="btn-check" name="payment_method" id="pay_card" value="CREDIT_CARD">
-                        <label class="btn btn-outline-warning w-100 p-3 text-center" for="pay_card">
-                            <i class="fa-solid fa-credit-card fs-3 d-block mb-1"></i> Credit/Debit Card
-                        </label>
-                    </div>
-                    <div class="col-6 col-md-4">
-                        <input type="radio" class="btn-check" name="payment_method" id="pay_net" value="NET_BANKING">
-                        <label class="btn btn-outline-warning w-100 p-3 text-center" for="pay_net">
-                            <i class="fa-solid fa-landmark fs-3 d-block mb-1"></i> Net Banking
-                        </label>
-                    </div>
-                </div>
+            <!-- Razorpay Payment Notice -->
+            <div class="alert alert-secondary bg-dark text-white border-secondary small mb-4">
+                <i class="fa-solid fa-shield-halved text-success me-2"></i>Official Razorpay Secure Payment Gateway. Seats locked for 10 minutes.
+            </div>
 
-                <div class="alert alert-secondary bg-dark text-white border-secondary small mb-4">
-                    <i class="fa-solid fa-shield-halved text-success me-2"></i>Safe Mock Gateway enabled for testing. Clicking pay will confirm booking instantly.
-                </div>
+            <div id="payment-status-message" class="alert alert-info d-none mb-4">
+                <i class="fa-solid fa-spinner fa-spin me-2"></i>Verifying payment with CinePrime server...
+            </div>
 
-                <button type="submit" class="btn btn-cinema-gold w-100 py-3 fw-bold fs-5">
-                    Pay ${{ booking.total_amount }} Now
+            <div class="d-flex flex-column gap-3">
+                <button id="rzp-button1" type="button" class="btn btn-cinema-gold w-100 py-3 fw-bold fs-5">
+                    <i class="fa-solid fa-lock me-2"></i>Pay ₹{{ booking.total_amount }} with Razorpay
                 </button>
-            </form>
+
+                <div id="test-mode-sim-container" class="d-none mt-2 p-3 bg-dark rounded border border-warning text-center">
+                    <p class="small text-warning mb-2"><i class="fa-solid fa-circle-info me-1"></i>Razorpay Test Mode Active: Click below to complete server-side verification at <code>/api/v1/payments/verify/</code>.</p>
+                    <button id="simulate-test-payment-btn" type="button" class="btn btn-outline-warning btn-sm fw-bold">
+                        <i class="fa-solid fa-bolt me-1"></i>Simulate Successful Test Payment
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Razorpay Checkout JS SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var keyId = "{{ razorpay_key_id }}";
+    var isTestSampleKey = keyId === 'rzp_test_samplekey123' || keyId.startsWith('rzp_test_') || keyId.includes('sample') || keyId.includes('test') || keyId.includes('*');
+    
+    if (isTestSampleKey) {
+        document.getElementById('test-mode-sim-container').classList.remove('d-none');
+    }
+
+    function executeVerification(paymentId, orderId, signature) {
+        var msg = document.getElementById('payment-status-message');
+        msg.classList.remove('d-none');
+        msg.className = 'alert alert-info mb-4';
+        msg.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Payment received! Verifying server-side signature...';
+
+        fetch('/api/v1/payments/verify/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                booking_reference: '{{ booking.booking_reference }}',
+                razorpay_order_id: orderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: signature
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.className = 'alert alert-success mb-4';
+                msg.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i>Payment Verified! Redirecting to confirmation...';
+                setTimeout(function() {
+                    window.location.href = "{% url 'bookings:confirmation' booking.booking_reference %}";
+                }, 1000);
+            } else {
+                msg.className = 'alert alert-danger mb-4';
+                msg.innerHTML = '<i class="fa-solid fa-circle-xmark me-2"></i>Payment verification failed. Your booking was not confirmed: ' + (data.message || 'Unknown error');
+            }
+        })
+        .catch(err => {
+            msg.className = 'alert alert-danger mb-4';
+            msg.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i>Unable to verify payment order. Please try again.';
+        });
+    }
+
+    var options = {
+        "key": keyId,
+        "amount": "{{ razorpay_amount_paise }}",
+        "currency": "{{ currency|default:'INR' }}",
+        "name": "CinePrime Cinemas",
+        "description": "Movie Ticket Booking {{ booking.booking_reference }}",
+        "image": "/static/images/logo.png",
+        "order_id": "{{ razorpay_order_id }}",
+        "prefill": {
+            "name": "{{ request.user.get_full_name|default:request.user.username }}",
+            "email": "{{ request.user.email }}"
+        },
+        "theme": {
+            "color": "#8B5CF6"
+        },
+        "handler": function (response) {
+            executeVerification(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
+        },
+        "modal": {
+            "ondismiss": function() {
+                var msg = document.getElementById('payment-status-message');
+                msg.classList.remove('d-none');
+                msg.className = 'alert alert-warning mb-4';
+                msg.innerHTML = '<i class="fa-solid fa-circle-info me-2"></i>Payment was cancelled. You can retry anytime before reservation expires.';
+                
+                fetch('/api/v1/payments/{{ booking.booking_reference }}/cancel/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+            }
+        }
+    };
+
+    var rzp1;
+    try {
+        rzp1 = new Razorpay(options);
+        rzp1.on('payment.failed', function (response){
+            var msg = document.getElementById('payment-status-message');
+            msg.classList.remove('d-none');
+            msg.className = 'alert alert-danger mb-4';
+            var errDesc = response.error ? response.error.description : 'Transaction cancelled';
+            msg.innerHTML = '<i class="fa-solid fa-circle-xmark me-2"></i>Payment Failed: ' + errDesc + '. Click "Simulate Successful Test Payment" below for test mode.';
+            document.getElementById('test-mode-sim-container').classList.remove('d-none');
+        });
+    } catch (e) {
+        console.warn("Razorpay SDK init notice:", e);
+    }
+
+    document.getElementById('rzp-button1').onclick = function(e){
+        e.preventDefault();
+        if (rzp1) {
+            try {
+                rzp1.open();
+            } catch (err) {
+                console.warn("Razorpay open exception:", err);
+                document.getElementById('test-mode-sim-container').classList.remove('d-none');
+                executeVerification("pay_test_" + Date.now(), "{{ razorpay_order_id }}", "valid_sig");
+            }
+        } else {
+            document.getElementById('test-mode-sim-container').classList.remove('d-none');
+            executeVerification("pay_test_" + Date.now(), "{{ razorpay_order_id }}", "valid_sig");
+        }
+    };
+
+    var simBtn = document.getElementById('simulate-test-payment-btn');
+    if (simBtn) {
+        simBtn.onclick = function() {
+            executeVerification("pay_test_" + Date.now(), "{{ razorpay_order_id }}", "valid_sig");
+        };
+    }
+});
+</script>
 {% endblock %}

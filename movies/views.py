@@ -3,88 +3,125 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count, Avg, F
 from django.http import JsonResponse
-from .models import Movie, Genre, Language, Watchlist, MovieCast, MovieImage
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.template.loader import render_to_string
+from django.utils import timezone
+import re
+import difflib
+from .models import Movie, Genre, Language, Watchlist, MovieCast, MovieImage, RecentlyViewedMovie
+from .services.discovery_service import MovieDiscoveryService
 from theaters.models import Theater
 from bookings.models import ShowSchedule
 from reviews.models import Review
 from recommendations.services import get_similar_movies, get_trending_movies
 
 def movie_listing_view(request):
-    movies = Movie.objects.all()
+    """
+    Production Movie Discovery View.
+    Provides database-level search, multi-faceted filtering, dynamic sorting,
+    dynamic match count, preserved pagination, and personalized recommendations.
+    """
+    # 1. Database Filtering & Sorting via Discovery Service
+    filtered_qs = MovieDiscoveryService.get_filtered_movies(request.GET)
+    total_found = filtered_qs.count()
 
-    # Search query
-    query = request.GET.get('q', '').strip()
-    if query:
-        movies = movies.filter(
-            Q(title__icontains=query) |
-            Q(director__icontains=query) |
-            Q(genres__name__icontains=query) |
-            Q(language__name__icontains=query) |
-            Q(cast_members__cast_member__name__icontains=query)
-        ).distinct()
+    # 2. Pagination (24 movies per page)
+    page = request.GET.get('page', 1)
+    paginator = Paginator(filtered_qs, 24)
+    try:
+        movies_page = paginator.page(page)
+    except (PageNotAnInteger, ValueError):
+        movies_page = paginator.page(1)
+    except EmptyPage:
+        movies_page = paginator.page(paginator.num_pages)
 
-    # Filters
-    genre_id = request.GET.get('genre')
-    if genre_id:
-        movies = movies.filter(genres__id=genre_id)
+    # Preserve URL params for pagination links
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    encoded_params = query_params.urlencode()
 
-    language_id = request.GET.get('language')
-    if language_id:
-        movies = movies.filter(language__id=language_id)
+    # 3. Personalized & Guest Recommendations
+    user_obj = getattr(request, 'user', None)
+    recommendations = MovieDiscoveryService.get_recommendations(user_obj, limit=6)
 
-    age_cert = request.GET.get('age_certification')
-    if age_cert:
-        movies = movies.filter(age_certification=age_cert)
-
-    status = request.GET.get('status')
-    if status:
-        movies = movies.filter(status=status)
-
-    min_rating = request.GET.get('min_rating')
-    if min_rating:
-        try:
-            movies = movies.filter(average_rating__gte=float(min_rating))
-        except ValueError:
-            pass
-
-    # Featured sections
-    now_showing = movies.filter(status=Movie.Status.NOW_SHOWING)[:8]
-    upcoming = movies.filter(status=Movie.Status.UPCOMING)[:8]
-    recently_released = movies.order_by('-release_date')[:8]
-    top_rated = movies.order_by('-average_rating')[:8]
-    trending = get_trending_movies(limit=8)
-
+    # 4. Filter choices data
     genres = Genre.objects.all()
     languages = Language.objects.all()
-    theaters = Theater.objects.filter(status=Theater.Status.ACTIVE)
-    active_shows = ShowSchedule.objects.filter(status=ShowSchedule.Status.OPEN).select_related('movie', 'theater', 'screen')
+    cities = list(Theater.objects.filter(status=Theater.Status.ACTIVE).values_list('city', flat=True).distinct())
 
-    hero_movies = movies.filter(status=Movie.Status.NOW_SHOWING)[:5]
+    selected_city = request.GET.get('city', '').strip()
+    if selected_city and selected_city != 'all':
+        theaters = Theater.objects.filter(status=Theater.Status.ACTIVE, city__iexact=selected_city)
+    else:
+        theaters = Theater.objects.filter(status=Theater.Status.ACTIVE)
+
+    movie_statuses = Movie.Status.choices
+
+    # Hero carousel movies: 2026 blockbusters
+    hero_movies = Movie.objects.filter(Q(release_date__year=2026) | Q(status=Movie.Status.NOW_SHOWING)).order_by('-average_rating', '-release_date')[:6]
+
+    # AJAX Json / Partial HTML Response
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+        html_cards = render_to_string('movies/_movie_cards_grid.html', {
+            'movies_page': movies_page,
+            'encoded_params': encoded_params,
+            'request': request
+        })
+        return JsonResponse({
+            'success': True,
+            'total_found': total_found,
+            'start_index': movies_page.start_index() if movies_page.object_list else 0,
+            'end_index': movies_page.end_index() if movies_page.object_list else 0,
+            'html': html_cards,
+            'page': movies_page.number,
+            'num_pages': paginator.num_pages,
+            'has_next': movies_page.has_next(),
+            'has_previous': movies_page.has_previous()
+        })
 
     context = {
-        'movies': movies,
+        'movies_page': movies_page,
+        'movies': movies_page.object_list,
+        'total_found': total_found,
+        'recommendations': recommendations,
         'hero_movies': hero_movies,
-        'now_showing': now_showing,
-        'upcoming': upcoming,
-        'recently_released': recently_released,
-        'top_rated': top_rated,
-        'trending': trending,
         'genres': genres,
         'languages': languages,
+        'cities': cities,
         'theaters': theaters,
-        'active_shows': active_shows,
-        'search_query': query,
-        'selected_genre': genre_id,
-        'selected_language': language_id,
-        'selected_cert': age_cert,
-        'selected_status': status,
-        'total_found': movies.count() if query or genre_id or language_id or age_cert or status or min_rating else None
+        'movie_statuses': movie_statuses,
+        'encoded_params': encoded_params,
+        
+        # Current Active Filter Parameters
+        'q': request.GET.get('q', ''),
+        'selected_genre': request.GET.get('genre', ''),
+        'selected_language': request.GET.get('language', ''),
+        'selected_city': selected_city,
+        'selected_theater': request.GET.get('theater', ''),
+        'selected_release_date': request.GET.get('release_date', ''),
+        'release_from': request.GET.get('release_from', ''),
+        'release_to': request.GET.get('release_to', ''),
+        'selected_rating': request.GET.get('rating', ''),
+        'selected_timing': request.GET.get('timing', ''),
+        'selected_status': request.GET.get('status', ''),
+        'min_price': request.GET.get('min_price', ''),
+        'max_price': request.GET.get('max_price', ''),
+        'selected_sort': request.GET.get('sort', 'newest'),
     }
     return render(request, 'movies/listing.html', context)
 
 
 def movie_detail_view(request, slug):
     movie = get_object_or_404(Movie.objects.prefetch_related('genres', 'cast_members__cast_member', 'images'), slug=slug)
+
+    # Record Recently Viewed Movie for authenticated users
+    if request.user.is_authenticated:
+        RecentlyViewedMovie.objects.update_or_create(
+            user=request.user,
+            movie=movie,
+            defaults={'viewed_at': timezone.now()}
+        )
 
     # Increment view count safely
     Movie.objects.filter(pk=movie.pk).update(views=F('views') + 1)
@@ -118,6 +155,10 @@ def movie_detail_view(request, slug):
     if request.user.is_authenticated:
         in_watchlist = Watchlist.objects.filter(user=request.user, movie=movie).exists()
 
+    # Production Gallery Stills
+    gallery_images = movie.images.all()
+
+
     context = {
         'movie': movie,
         'shows': shows,
@@ -126,8 +167,10 @@ def movie_detail_view(request, slug):
         'rating_percentages': rating_percentages,
         'similar_movies': similar_movies,
         'in_watchlist': in_watchlist,
+        'gallery_images': gallery_images,
     }
     return render(request, 'movies/detail.html', context)
+
 
 
 @login_required
@@ -173,8 +216,9 @@ def theaters_view(request):
             Q(name__icontains=query) |
             Q(city__icontains=query) |
             Q(location__icontains=query) |
-            Q(facilities__icontains=query)
-        )
+            Q(facilities__icontains=query) |
+            Q(screens__shows__movie__title__icontains=query)
+        ).distinct()
 
     cities = Theater.objects.values_list('city', flat=True).distinct()
     active_shows = ShowSchedule.objects.filter(status=ShowSchedule.Status.OPEN).select_related('movie', 'theater', 'screen')
@@ -201,35 +245,36 @@ def search_view(request):
             'total_found': 0,
         })
 
-    # Step 1: Filter movies matching the query across all metadata fields
-    matching_qs = Movie.objects.filter(
-        Q(title__icontains=query) |
-        Q(director__icontains=query) |
-        Q(description__icontains=query) |
-        Q(genres__name__icontains=query) |
-        Q(language__name__icontains=query) |
-        Q(cast_members__cast_member__name__icontains=query)
-    ).distinct().prefetch_related('genres', 'language', 'cast_members')
+    # Step 1: Filter movies matching the query via smart search query builder
+    search_q = MovieDiscoveryService.build_smart_search_q(query)
+    matching_qs = Movie.objects.filter(search_q).distinct().prefetch_related('genres', 'language', 'cast_members')
 
-    # Step 2: Score matching movies (exact title > title starts with > title contains > director/genre/cast)
+    # Step 2: Score matching movies by relevance
     scored_matches = []
     q_lower = query.lower()
+    q_cleaned = re.sub(r'[^\w\s]', '', q_lower)
+
     for movie in matching_qs:
         title_lower = movie.title.lower()
+        title_cleaned = re.sub(r'[^\w\s]', '', title_lower)
         score = 0
-        if title_lower == q_lower:
+
+        if title_lower == q_lower or title_cleaned == q_cleaned:
             score += 100
-        elif title_lower.startswith(q_lower):
-            score += 50
-        elif q_lower in title_lower:
-            score += 30
+        elif title_lower.startswith(q_lower) or title_cleaned.startswith(q_cleaned):
+            score += 60
+        elif q_lower in title_lower or q_cleaned in title_cleaned:
+            score += 40
+        else:
+            ratio = difflib.SequenceMatcher(None, q_lower, title_lower).ratio()
+            score += int(ratio * 35)
 
         if movie.director and q_lower in movie.director.lower():
-            score += 15
+            score += 20
 
         for g in movie.genres.all():
             if q_lower in g.name.lower():
-                score += 10
+                score += 15
 
         if movie.description and q_lower in movie.description.lower():
             score += 5
@@ -344,14 +389,36 @@ def search_suggestions_api(request):
     if not query or len(query) < 2:
         return JsonResponse({'results': []})
 
-    matches = Movie.objects.filter(
-        Q(title__icontains=query) |
-        Q(director__icontains=query) |
-        Q(genres__name__icontains=query)
-    ).distinct().prefetch_related('genres', 'language')[:6]
+    search_q = MovieDiscoveryService.build_smart_search_q(query)
+    matches = Movie.objects.filter(search_q).distinct().prefetch_related('genres', 'language')
+
+    scored_matches = []
+    q_lower = query.lower()
+    q_cleaned = re.sub(r'[^\w\s]', '', q_lower)
+
+    for m in matches:
+        t_lower = m.title.lower()
+        t_cleaned = re.sub(r'[^\w\s]', '', t_lower)
+        score = 0
+
+        if t_lower == q_lower or t_cleaned == q_cleaned:
+            score += 100
+        elif t_lower.startswith(q_lower) or t_cleaned.startswith(q_cleaned):
+            score += 60
+        elif q_lower in t_lower or q_cleaned in t_cleaned:
+            score += 40
+        else:
+            ratio = difflib.SequenceMatcher(None, q_lower, t_lower).ratio()
+            score += int(ratio * 35)
+
+        score += (m.average_rating or 0.0)
+        scored_matches.append((score, m))
+
+    scored_matches.sort(key=lambda x: x[0], reverse=True)
+    top_matches = [m[1] for m in scored_matches[:6]]
 
     results = []
-    for m in matches:
+    for m in top_matches:
         results.append({
             'id': m.id,
             'title': m.title,

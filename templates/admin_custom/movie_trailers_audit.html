@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Official Movie Trailer Audit & Control Center — CinePrime Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="brand-font text-white mb-1"><i class="fa-solid fa-film text-warning me-2"></i>Official Movie Trailer Management</h2>
+            <p class="text-secondary mb-0">Automated YouTube trailer matching, confidence scoring matrix, manual review, and single-primary trailer validation.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/movies/movietrailer/" class="btn btn-dark-outline"><i class="fa-solid fa-database me-1"></i> Trailer Admin</a>
+            <a href="/admin/movie-images/" class="btn btn-dark-outline"><i class="fa-solid fa-images me-1"></i> Image Audit</a>
+            <a href="/dashboard/admin/" class="btn btn-dark-outline"><i class="fa-solid fa-chart-line me-1"></i> Admin Analytics</a>
+        </div>
+    </div>
+
+    <!-- Messages Banner -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- KPI Summary Cards Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-4">
+        <div class="col">
+            <a href="?status=all" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'all' %}border-warning{% endif %}">
+                    <span class="text-secondary small d-block">TOTAL MOVIES</span>
+                    <h3 class="brand-font text-white mb-0">{{ total_movies }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=verified" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'verified' %}border-success{% endif %}">
+                    <span class="text-success small d-block">VERIFIED TRAILERS</span>
+                    <h3 class="brand-font text-success mb-0">{{ verified_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=manual_review" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'manual_review' %}border-warning{% endif %}">
+                    <span class="text-warning small d-block">MANUAL REVIEW</span>
+                    <h3 class="brand-font text-warning mb-0">{{ manual_review_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=missing" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'missing' %}border-info{% endif %}">
+                    <span class="text-info small d-block">NO TRAILER FOUND</span>
+                    <h3 class="brand-font text-info mb-0">{{ no_trailer_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a href="?status=broken" class="text-decoration-none">
+                <div class="cinema-card p-3 text-center {% if selected_status == 'broken' %}border-danger{% endif %}">
+                    <span class="text-danger small d-block">BROKEN / UNAVAILABLE</span>
+                    <h3 class="brand-font text-danger mb-0">{{ broken_cnt }}</h3>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Diagnostic Audit Table -->
+    <div class="cinema-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h5 class="brand-font text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i>Official Movie Trailer Diagnostics</h5>
+            <div class="btn-group btn-group-sm">
+                <a href="?status=all" class="btn {% if selected_status == 'all' %}btn-warning{% else %}btn-outline-secondary{% endif %}">All</a>
+                <a href="?status=verified" class="btn {% if selected_status == 'verified' %}btn-success{% else %}btn-outline-secondary{% endif %}">Verified</a>
+                <a href="?status=manual_review" class="btn {% if selected_status == 'manual_review' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Manual Review</a>
+                <a href="?status=missing" class="btn {% if selected_status == 'missing' %}btn-info{% else %}btn-outline-secondary{% endif %}">Missing</a>
+                <a href="?status=broken" class="btn {% if selected_status == 'broken' %}btn-danger{% else %}btn-outline-secondary{% endif %}">Broken</a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle border-secondary mb-0">
+                <thead>
+                    <tr class="text-secondary small">
+                        <th>ID</th>
+                        <th>Movie Title</th>
+                        <th>Trailer Preview & Title</th>
+                        <th>YouTube Video ID</th>
+                        <th>Channel Name</th>
+                        <th>Type</th>
+                        <th>Confidence</th>
+                        <th>Status</th>
+                        <th>Manual Assignment Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in audited_trailers %}
+                        <tr>
+                            <td><span class="text-muted fw-bold">#{{ item.movie_id }}</span></td>
+                            <td>
+                                <strong class="text-white d-block">{{ item.title }}</strong>
+                                <span class="text-secondary small">{{ item.release_year }} • {{ item.director|default:"N/A" }}</span>
+                            </td>
+                            <td>
+                                {% if item.video_id and item.video_id != 'NONE' and item.video_id != 'NO_TRAILER' %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none position-relative" data-open-modal="trailer" data-title="{{ item.title }}" data-trailer="{{ item.trailer_url }}">
+                                            <img src="{{ item.thumbnail_url }}" alt="{{ item.trailer_title }}" style="width: 70px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,176,0,0.3);">
+                                            <span class="position-absolute top-50 start-50 translate-middle text-warning fs-6"><i class="fa-solid fa-circle-play"></i></span>
+                                        </button>
+                                        <div>
+                                            <span class="text-light small fw-bold text-truncate d-block" style="max-width: 200px;" title="{{ item.trailer_title }}">{{ item.trailer_title }}</span>
+                                            <a href="{{ item.trailer_url }}" target="_blank" class="text-cyan small text-decoration-none"><i class="fa-brands fa-youtube me-1"></i>Open YouTube</a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted small"><i class="fa-solid fa-film me-1"></i>No trailer assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.video_id and item.video_id != 'NONE' and item.video_id != 'NO_TRAILER' %}
+                                    <code class="text-cyan small">{{ item.video_id }}</code>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="text-secondary small">{{ item.channel_name }}</span></td>
+                            <td><span class="badge bg-dark border border-secondary">{{ item.trailer_type }}</span></td>
+                            <td>
+                                {% if item.confidence_score >= 90 %}
+                                    <span class="badge bg-success">{{ item.confidence_score }}%</span>
+                                {% elif item.confidence_score >= 70 %}
+                                    <span class="badge bg-warning text-dark">{{ item.confidence_score }}%</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ item.confidence_score }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.verification_status == 'VERIFIED' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>VERIFIED</span>
+                                {% elif item.verification_status == 'MANUAL_REVIEW_REQUIRED' %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-triangle-exclamation me-1"></i>MANUAL REVIEW</span>
+                                {% elif item.verification_status == 'NO_TRAILER_FOUND' %}
+                                    <span class="badge bg-info"><i class="fa-solid fa-magnifying-glass me-1"></i>MISSING</span>
+                                {% else %}
+                                    <span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i>{{ item.verification_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <!-- Manual Trailer Override Input Form -->
+                                <form method="POST" action="{% url 'admin_movie_trailers_audit' %}" class="d-flex gap-1 align-items-center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="movie_id" value="{{ item.movie_id }}">
+                                    <input type="text" name="youtube_url" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Paste YouTube URL..." style="min-width: 150px; font-size: 0.75rem;" required>
+                                    <button type="submit" class="btn btn-gold btn-sm py-1 px-2 text-nowrap fw-bold" style="font-size: 0.75rem;" title="Assign as Official Trailer">
+                                        <i class="fa-solid fa-check me-1"></i>Assign
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">No trailer records match the selected status filter.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

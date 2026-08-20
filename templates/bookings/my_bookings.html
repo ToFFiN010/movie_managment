@@ -1,61 +1,138 @@
 {% extends 'base.html' %}
 
-{% block title %}My Bookings — CinePrime{% endblock %}
+{% block title %}My Bookings & Payment History — CinePrime{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="brand-font text-white mb-0"><i class="fa-solid fa-ticket-simple text-warning me-2"></i>My Bookings</h3>
+    <h3 class="brand-font text-white mb-0"><i class="fa-solid fa-ticket-simple text-warning me-2"></i>My Bookings & Payment History</h3>
     <span class="badge bg-warning text-dark fs-6">{{ bookings.count }} Total Bookings</span>
 </div>
 
-<div class="row row-cols-1 g-3">
-    {% for b in bookings %}
-        <div class="col">
-            <div class="glass-card p-4">
-                <div class="row align-items-center">
-                    <div class="col-md-2 text-center mb-3 mb-md-0">
-                        <img src="{{ b.show.movie.get_poster_url }}" alt="{{ b.show.movie.title }}" class="rounded-3 shadow-sm" width="90" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="object-fit: cover;">
-                    </div>
-                    <div class="col-md-7">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-warning text-dark">Ref: {{ b.booking_reference }}</span>
-                            {% if b.status == 'CONFIRMED' %}
-                                <span class="badge bg-success">Confirmed</span>
-                            {% elif b.status == 'CANCELLED' %}
-                                <span class="badge bg-danger">Cancelled</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ b.status }}</span>
-                            {% endif %}
-                        </div>
-                        <h5 class="brand-font text-white mb-1">{{ b.show.movie.title }}</h5>
-                        <p class="small text-muted mb-1"><i class="fa-solid fa-building me-1"></i>{{ b.show.theater.name }} — {{ b.show.screen.name }}</p>
-                        <p class="small text-muted mb-2"><i class="fa-solid fa-clock me-1"></i>{{ b.show.show_date|date:"D, M d, Y" }} at {{ b.show.start_time|time:"H:i" }}</p>
-                        <div class="small text-light">
-                            <strong>Seats:</strong> 
-                            {% for bs in b.booked_seats.all %}
-                                <span class="badge bg-dark border border-secondary">{{ bs.seat.label }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="col-md-3 text-md-end mt-3 mt-md-0">
-                        <h4 class="brand-font text-warning fw-bold mb-2">${{ b.total_amount }}</h4>
-                        {% if b.status == 'CONFIRMED' %}
-                            <div class="d-flex flex-column gap-2">
-                                <a href="{% url 'bookings:download_ticket' b.booking_reference %}" class="btn btn-cinema-gold btn-sm"><i class="fa-solid fa-file-pdf me-1"></i> Download PDF</a>
-                                <a href="{% url 'bookings:cancel_booking' b.booking_reference %}" class="btn btn-outline-danger btn-sm">Cancel Booking</a>
-                                <a href="{% url 'reviews:write_review' b.show.movie.id %}" class="btn btn-sm btn-outline-warning"><i class="fa-solid fa-star me-1"></i> Rate & Review</a>
+<!-- Nav tabs -->
+<ul class="nav nav-pills mb-4 gap-2 border-bottom border-secondary pb-3" id="bookingHistoryTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="btn btn-sm btn-gold active px-4 fw-bold" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings-panel" type="button" role="tab"><i class="fa-solid fa-clapperboard me-2"></i>My Bookings</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="btn btn-sm btn-dark-outline px-4 fw-semibold" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments-panel" type="button" role="tab"><i class="fa-solid fa-receipt me-2"></i>Payment History</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="bookingHistoryTabContent">
+    <!-- Bookings Tab Panel -->
+    <div class="tab-pane fade show active" id="bookings-panel" role="tabpanel">
+        <div class="row row-cols-1 g-3">
+            {% for b in bookings %}
+                <div class="col">
+                    <div class="glass-card p-4 border border-secondary">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                <img src="{{ b.show.movie.get_poster_url }}" alt="{{ b.show.movie.title }} poster" class="rounded-3 shadow-sm" width="90" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';" style="object-fit: cover;">
                             </div>
-                        {% endif %}
+                            <div class="col-md-7">
+                                <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                                    <span class="badge bg-warning text-dark font-monospace fw-bold">Ref: {{ b.booking_reference }}</span>
+                                    {% if b.status == 'CONFIRMED' %}
+                                        <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>Confirmed</span>
+                                    {% elif b.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Payment Pending</span>
+                                    {% elif b.status == 'EXPIRED' %}
+                                        <span class="badge bg-secondary"><i class="fa-solid fa-hourglass-end me-1"></i>Expired</span>
+                                    {% elif b.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i>Cancelled</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ b.status }}</span>
+                                    {% endif %}
+                                    <span class="badge bg-dark border border-secondary text-info">Txn: {{ b.payment.transaction_id|default:b.payment.gateway_order_id|default:"Pending" }}</span>
+                                    {% if b.ticket %}
+                                        <span class="badge bg-dark border border-secondary text-light"><i class="fa-solid fa-envelope me-1 text-warning"></i>Email: {{ b.ticket.email_status }}</span>
+                                    {% endif %}
+                                </div>
+                                <h5 class="brand-font text-white mb-1">{{ b.show.movie.title }}</h5>
+                                <p class="small text-muted mb-1"><i class="fa-solid fa-building me-1"></i>{{ b.show.theater.name }} — {{ b.show.screen.name }} ({{ b.show.screen.screen_type }})</p>
+                                <p class="small text-muted mb-2"><i class="fa-solid fa-calendar-day me-1"></i>{{ b.show.show_date|date:"D, M d, Y" }} at {{ b.show.start_time|time:"I:i A" }}</p>
+                                <div class="small text-light">
+                                    <strong>Seats:</strong> 
+                                    {% for bs in b.booked_seats.all %}
+                                        <span class="badge bg-purple border border-secondary">{{ bs.seat.label }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                                <h4 class="brand-font text-warning fw-bold mb-2">₹{{ b.total_amount }}</h4>
+                                {% if b.status == 'CONFIRMED' %}
+                                    <div class="d-flex flex-column gap-2">
+                                        <a href="{% url 'bookings:download_ticket' b.booking_reference %}" class="btn btn-cinema-gold btn-sm fw-semibold"><i class="fa-solid fa-file-pdf me-1"></i> PDF Ticket</a>
+                                        <a href="{% url 'bookings:confirmation' b.booking_reference %}" class="btn btn-dark-outline btn-sm">View Ticket</a>
+                                        <a href="{% url 'bookings:cancel_booking' b.booking_reference %}" class="btn btn-outline-danger btn-sm">Cancel Ticket</a>
+                                    </div>
+                                {% elif b.status == 'PENDING' or b.status == 'EXPIRED' %}
+                                    <div class="d-flex flex-column gap-2">
+                                        <a href="{% url 'bookings:checkout' b.booking_reference %}" class="btn btn-warning btn-sm fw-bold"><i class="fa-solid fa-rotate-right me-1"></i> Retry Payment</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
+            {% empty %}
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="fa-solid fa-ticket fs-1 mb-3 text-warning"></i>
+                    <p>You haven't made any bookings yet.</p>
+                    <a href="{% url 'movies:listing' %}" class="btn btn-cinema-gold">Browse Movies</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Payments Tab Panel -->
+    <div class="tab-pane fade" id="payments-panel" role="tabpanel">
+        <div class="glass-card p-4">
+            <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-credit-card text-warning me-2"></i>Recent Transaction History</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead>
+                        <tr class="text-secondary border-secondary">
+                            <th>Booking Ref</th>
+                            <th>Movie</th>
+                            <th>Gateway</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Transaction / Order ID</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in bookings %}
+                            {% for p in b.payments.all %}
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-monospace">{{ b.booking_reference }}</span></td>
+                                <td class="fw-bold text-white">{{ b.show.movie.title }}</td>
+                                <td><span class="badge bg-dark border border-secondary">{{ p.gateway }}</span></td>
+                                <td class="text-warning fw-bold">₹{{ p.amount }}</td>
+                                <td>
+                                    {% if p.payment_status == 'SUCCESS' %}
+                                        <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>SUCCESS</span>
+                                    {% elif p.payment_status == 'FAILED' %}
+                                        <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i>FAILED</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{{ p.payment_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="font-monospace fs-7 text-info">{{ p.transaction_id|default:p.gateway_order_id|default:"N/A" }}</td>
+                                <td class="small text-muted">{{ p.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            {% endfor %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">No payment transactions recorded yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-    {% empty %}
-        <div class="col-12 text-center py-5 text-muted">
-            <i class="fa-solid fa-ticket fs-1 mb-3"></i>
-            <p>You haven't made any bookings yet.</p>
-            <a href="{% url 'movies:listing' %}" class="btn btn-cinema-gold">Browse Movies</a>
-        </div>
-    {% endfor %}
+    </div>
 </div>
 {% endblock %}

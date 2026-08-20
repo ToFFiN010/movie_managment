@@ -1,0 +1,1 @@
+# Bookings tests package

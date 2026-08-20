@@ -11,6 +11,7 @@ urlpatterns = [
     path('checkout/<str:booking_ref>/', views.booking_checkout_view, name='checkout'),
     path('confirmation/<str:booking_ref>/', views.booking_confirmation_view, name='confirmation'),
     path('ticket/<str:booking_ref>/pdf/', views.download_ticket_pdf_view, name='download_ticket'),
+    path('tickets/verify/<str:qr_token>/', views.verify_ticket_view, name='verify_ticket'),
     path('cancel/<str:booking_ref>/', views.cancel_booking_view, name='cancel_booking'),
 
     # Quick Booking Dynamic API Routes

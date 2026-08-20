@@ -1,125 +1,165 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Admin Analytics Dashboard — CinePrime{% endblock %}
+{% block title %}Admin Commercial Analytics & Control Center — CinePrime{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="brand-font text-white mb-0"><i class="fa-solid fa-chart-line text-warning me-2"></i>Admin Management & Analytics</h3>
-    <a href="/admin/" class="btn btn-cinema-gold"><i class="fa-solid fa-gear me-1"></i> Open Django Admin Panel</a>
-</div>
+<div class="container-fluid py-4">
+    <!-- Dashboard Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="brand-font text-white mb-1"><i class="fa-solid fa-chart-line text-warning me-2"></i>Commercial Admin Dashboard</h2>
+            <p class="text-secondary mb-0">Real-time revenue, booking trends, seat occupancy, and system audit monitoring.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/" class="btn btn-dark-outline"><i class="fa-solid fa-database me-1"></i> Django Admin</a>
+            <button id="refresh_stats_btn" class="btn btn-gold"><i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Analytics</button>
+        </div>
+    </div>
 
-<!-- Stats Counter Cards Grid -->
-<div class="row row-cols-2 row-cols-md-4 g-3 mb-5">
-    <div class="col">
-        <div class="glass-card p-3 text-center">
-            <i class="fa-solid fa-film text-warning fs-3 mb-2"></i>
-            <h3 class="brand-font text-white fw-bold mb-0">{{ total_movies }}</h3>
-            <span class="text-muted small">Total Movies</span>
+    <!-- Animated KPI Cards Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-4 mb-4">
+        <div class="col">
+            <div class="cinema-card p-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle p-3 bg-warning bg-opacity-10 text-warning fs-3">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Total Revenue</span>
+                    <h3 class="brand-font text-white mb-0" id="kpi_total_revenue">${{ total_revenue }}</h3>
+                    <span class="text-success small"><i class="fa-solid fa-arrow-trend-up me-1"></i>Today: $<span id="kpi_today_revenue">0.00</span></span>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col">
-        <div class="glass-card p-3 text-center">
-            <i class="fa-solid fa-ticket text-success fs-3 mb-2"></i>
-            <h3 class="brand-font text-white fw-bold mb-0">{{ todays_bookings }}</h3>
-            <span class="text-muted small">Today's Bookings ({{ total_bookings }} Total)</span>
-        </div>
-    </div>
-    <div class="col">
-        <div class="glass-card p-3 text-center">
-            <i class="fa-solid fa-sack-dollar text-warning fs-3 mb-2"></i>
-            <h3 class="brand-font text-white fw-bold mb-0">${{ total_revenue }}</h3>
-            <span class="text-muted small">Total Revenue</span>
-        </div>
-    </div>
-    <div class="col">
-        <div class="glass-card p-3 text-center">
-            <i class="fa-solid fa-users text-info fs-3 mb-2"></i>
-            <h3 class="brand-font text-white fw-bold mb-0">{{ total_users }}</h3>
-            <span class="text-muted small">Registered Users</span>
-        </div>
-    </div>
-</div>
 
-<div class="row g-4 mb-5">
-    <!-- Top Popular Movies -->
-    <div class="col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-fire text-danger me-2"></i>Top Movies by Bookings</h5>
-            <div class="table-responsive">
-                <table class="table table-dark table-hover border-secondary align-middle">
-                    <thead>
-                        <tr>
-                            <th>Movie</th>
-                            <th>Status</th>
-                            <th>Rating</th>
-                            <th>Bookings</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in popular_movies %}
-                            <tr>
-                                <td><strong class="text-white">{{ m.title }}</strong></td>
-                                <td><span class="badge bg-secondary">{{ m.status }}</span></td>
-                                <td><span class="text-warning fw-bold">{{ m.average_rating }} ★</span></td>
-                                <td><span class="badge bg-warning text-dark">{{ m.booking_count }}</span></td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="4" class="text-center text-muted">No booking data available.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="col">
+            <div class="cinema-card p-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle p-3 bg-success bg-opacity-10 text-success fs-3">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Bookings Count</span>
+                    <h3 class="brand-font text-white mb-0" id="kpi_total_bookings">{{ total_bookings }}</h3>
+                    <span class="text-info small">Today: <span id="kpi_today_bookings">{{ todays_bookings }}</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle p-3 bg-info bg-opacity-10 text-info fs-3">
+                    <i class="fa-solid fa-couch"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Occupancy Rate</span>
+                    <h3 class="brand-font text-white mb-0" id="kpi_occupancy_rate">0.0%</h3>
+                    <span class="text-secondary small">Across all active screens</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="cinema-card p-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle p-3 bg-danger bg-opacity-10 text-danger fs-3">
+                    <i class="fa-solid fa-shield-check"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block">Payment Success</span>
+                    <h3 class="brand-font text-white mb-0" id="kpi_payment_rate">100%</h3>
+                    <span class="text-secondary small">Cancellation: <span id="kpi_cancel_rate">0.0%</span></span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Rating Distribution -->
-    <div class="col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-star text-warning me-2"></i>Rating Distribution Summary</h5>
-            <ul class="list-group list-group-flush bg-transparent">
-                {% for item in rating_counts %}
-                    <li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center">
-                        <span><strong class="text-warning">{{ item.rating }} Stars</strong></span>
-                        <span class="badge bg-secondary rounded-pill">{{ item.count }} Reviews</span>
-                    </li>
-                {% empty %}
-                    <li class="list-group-item bg-transparent text-muted border-secondary text-center">No reviews submitted.</li>
-                {% endfor %}
-            </ul>
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="cinema-card p-4">
+                <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-chart-area text-warning me-2"></i>Revenue & Bookings Trend (7 Days)</h5>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="revenue_chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="cinema-card p-4">
+                <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-fire text-danger me-2"></i>Top Revenue Movies</h5>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="top_movies_chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Management Tables -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="cinema-card p-4 h-100">
+                <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-film text-warning me-2"></i>Top Popular Movies</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover border-secondary align-middle">
+                        <thead>
+                            <tr>
+                                <th>Movie</th>
+                                <th>Status</th>
+                                <th>Rating</th>
+                                <th>Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in popular_movies %}
+                                <tr>
+                                    <td><strong class="text-white">{{ m.title }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ m.status }}</span></td>
+                                    <td><span class="text-warning fw-bold">{{ m.average_rating }} ★</span></td>
+                                    <td><span class="badge bg-warning text-dark">{{ m.booking_count }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center text-secondary">No movie data available.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="cinema-card p-4 h-100">
+                <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-flag text-danger me-2"></i>Pending Review Moderation</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover border-secondary align-middle">
+                        <thead>
+                            <tr>
+                                <th>Movie</th>
+                                <th>Reported By</th>
+                                <th>Reason</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in pending_reports %}
+                                <tr>
+                                    <td>{{ r.review.movie.title }}</td>
+                                    <td>{{ r.reported_by.username }}</td>
+                                    <td><span class="badge bg-danger">{{ r.reason }}</span></td>
+                                    <td>
+                                        <a href="/admin/reviews/reviewreport/{{ r.id }}/change/" class="btn btn-gold btn-sm">Moderate</a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center text-secondary">No pending reports.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Pending Review Reports for Admin Moderation -->
-<div class="glass-card p-4">
-    <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-flag text-danger me-2"></i>Pending Review Reports</h5>
-    <div class="table-responsive">
-        <table class="table table-dark table-hover border-secondary align-middle">
-            <thead>
-                <tr>
-                    <th>Movie</th>
-                    <th>Reported By</th>
-                    <th>Reason</th>
-                    <th>Review Content</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in pending_reports %}
-                    <tr>
-                        <td>{{ r.review.movie.title }}</td>
-                        <td>{{ r.reported_by.username }}</td>
-                        <td><span class="badge bg-danger">{{ r.reason }}</span></td>
-                        <td class="small text-light opacity-90">{{ r.review.review_text|truncatewords:15 }}</td>
-                        <td>
-                            <a href="/admin/reviews/reviewreport/{{ r.id }}/change/" class="btn btn-cinema-gold btn-sm py-1 px-2">Moderate</a>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="5" class="text-center text-muted">No pending review reports.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

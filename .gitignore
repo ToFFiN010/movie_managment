@@ -1,0 +1,29 @@
+# Python & Django
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+
+# Media & User Uploads (High resolution image assets)
+media/
+staticfiles/
+
+# Logs & scratch files
+*.log
+*.csv
+movie_image_import.log
+movie_image_report.csv
+scratch/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

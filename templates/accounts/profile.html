@@ -4,20 +4,50 @@
 
 {% block content %}
 <div class="row justify-content-center py-4">
-    <div class="col-md-8 col-lg-6">
+    <div class="col-md-9 col-lg-8">
         <div class="glass-card p-4 p-md-5">
-            <div class="d-flex align-items-center mb-4">
-                {% if profile.profile_picture %}
-                    <img src="{{ profile.profile_picture.url }}" class="rounded-circle me-3 border border-warning" width="80" height="80" style="object-fit: cover;">
-                {% else %}
-                    <div class="rounded-circle bg-dark border border-warning d-flex align-items-center justify-content-center me-3" style="width: 80px; height: 80px;">
-                        <i class="fa-solid fa-user text-warning fs-1"></i>
+            <div class="d-flex align-items-center flex-wrap justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" class="rounded-circle me-3 border border-warning" width="80" height="80" style="object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-dark border border-warning d-flex align-items-center justify-content-center me-3" style="width: 80px; height: 80px;">
+                            <i class="fa-solid fa-user text-warning fs-1"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h3 class="brand-font text-white mb-0">{{ user.get_full_name|default:user.username }}</h3>
+                        <p class="text-muted mb-0"><i class="fa-solid fa-envelope me-1"></i>{{ user.email }}</p>
+                        <span class="badge bg-warning text-dark mt-1">{{ user.get_role_display }}</span>
                     </div>
-                {% endif %}
-                <div>
-                    <h3 class="brand-font text-white mb-0">{{ user.get_full_name|default:user.username }}</h3>
-                    <p class="text-muted mb-0"><i class="fa-solid fa-envelope me-1"></i>{{ user.email }}</p>
-                    <span class="badge bg-warning text-dark mt-1">{{ user.get_role_display }}</span>
+                </div>
+
+                <div class="d-flex gap-2 mt-3 mt-md-0">
+                    <a href="{% url 'bookings:my_bookings' %}" class="btn btn-cinema-gold btn-sm px-3 fw-bold">
+                        <i class="fa-solid fa-ticket me-1"></i> My Bookings
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Action Links Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-dark rounded-3 border border-secondary d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-bold text-white"><i class="fa-solid fa-film text-warning me-2"></i>My Bookings</div>
+                            <div class="small text-muted">View tickets and active reservations</div>
+                        </div>
+                        <a href="{% url 'bookings:my_bookings' %}" class="btn btn-sm btn-dark-outline">View</a>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-dark rounded-3 border border-secondary d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-bold text-white"><i class="fa-solid fa-receipt text-info me-2"></i>Payment History</div>
+                            <div class="small text-muted">View transactions and gateway receipts</div>
+                        </div>
+                        <a href="{% url 'bookings:my_bookings' %}#payments-panel" class="btn btn-sm btn-dark-outline">History</a>
+                    </div>
                 </div>
             </div>
 

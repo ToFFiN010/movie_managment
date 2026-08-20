@@ -1,0 +1,262 @@
+[
+  {
+    "id": 6,
+    "title": "Avatar 3: Fire and Ash",
+    "poster": "movies/posters/avatar-3-fire-and-ash.jpg",
+    "backdrop_image": "movies/backdrops/avatar-3-fire-and-ash.jpg",
+    "poster_path": "/media/movies/posters/avatar-3-fire-and-ash.jpg",
+    "backdrop_path": "/media/movies/backdrops/avatar-3-fire-and-ash-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/avatar-3-fire-and-ash.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/avatar-3-fire-and-ash-backdrop.jpg"
+  },
+  {
+    "id": 19,
+    "title": "Kalki 2898 AD - Part 2",
+    "poster": "movies/posters/kalki-2898-ad-part-2.jpg",
+    "backdrop_image": "movies/backdrops/kalki-2898-ad-part-2.jpg",
+    "poster_path": "/media/movies/posters/kalki-2898-ad-part-2.jpg",
+    "backdrop_path": "/media/movies/backdrops/kalki-2898-ad-part-2-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/kalki-2898-ad-part-2.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/kalki-2898-ad-part-2-backdrop.jpg"
+  },
+  {
+    "id": 7,
+    "title": "The Batman Part II",
+    "poster": "movies/posters/the-batman-part-ii.jpg",
+    "backdrop_image": "movies/backdrops/the-batman-part-ii.jpg",
+    "poster_path": "/media/movies/posters/the-batman-part-ii.jpg",
+    "backdrop_path": "/media/movies/backdrops/the-batman-part-ii-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/the-batman-part-ii.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/the-batman-part-ii-backdrop.jpg"
+  },
+  {
+    "id": 21,
+    "title": "Salaar: Part 2 \u2013 Shouryaanga Parvam",
+    "poster": "movies/posters/salaar-part-2-shouryaanga-parvam.jpg",
+    "backdrop_image": "movies/backdrops/salaar-part-2-shouryaanga-parvam.jpg",
+    "poster_path": "/media/movies/posters/salaar-part-2-shouryaanga-parvam.jpg",
+    "backdrop_path": "/media/movies/backdrops/salaar-part-2-shouryaanga-parvam-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/salaar-part-2-shouryaanga-parvam.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/salaar-part-2-shouryaanga-parvam-backdrop.jpg"
+  },
+  {
+    "id": 26,
+    "title": "Spider-Man: Brand New Day",
+    "poster": "movies/posters/spider-man-brand-new-day.jpg",
+    "backdrop_image": "movies/backdrops/spider-man-brand-new-day.jpg",
+    "poster_path": "/media/movies/posters/spider-man-brand-new-day.jpg",
+    "backdrop_path": "/media/movies/backdrops/spider-man-4-beyond-reality-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/spider-man-4-beyond-reality.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/spider-man-4-beyond-reality-backdrop.jpg"
+  },
+  {
+    "id": 25,
+    "title": "Supergirl: Woman of Tomorrow",
+    "poster": "movies/posters/supergirl-woman-of-tomorrow.jpg",
+    "backdrop_image": "movies/backdrops/supergirl-woman-of-tomorrow.jpg",
+    "poster_path": "/media/movies/posters/supergirl-woman-of-tomorrow.jpg",
+    "backdrop_path": "/media/movies/backdrops/supergirl-woman-of-tomorrow-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/supergirl-woman-of-tomorrow.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/supergirl-woman-of-tomorrow-backdrop.jpg"
+  },
+  {
+    "id": 24,
+    "title": "The Mandalorian & Grogu",
+    "poster": "movies/posters/the-mandalorian-grogu.jpg",
+    "backdrop_image": "movies/backdrops/the-mandalorian-grogu.jpg",
+    "poster_path": "/media/movies/posters/the-mandalorian-grogu.jpg",
+    "backdrop_path": "/media/movies/backdrops/the-mandalorian-grogu-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/the-mandalorian-grogu.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/the-mandalorian-grogu-backdrop.jpg"
+  },
+  {
+    "id": 23,
+    "title": "Avengers: Doomsday 2026",
+    "poster": "movies/posters/avengers-doomsday-2026.jpg",
+    "backdrop_image": "movies/backdrops/avengers-doomsday-2026.jpg",
+    "poster_path": "/media/movies/posters/avengers-doomsday-2026.jpg",
+    "backdrop_path": "/media/movies/backdrops/avengers-doomsday-2026-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/avengers-doomsday-2026.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/avengers-doomsday-2026-backdrop.jpg"
+  },
+  {
+    "id": 20,
+    "title": "Dune: Part Two (2026 Edition)",
+    "poster": "movies/posters/dune-part-two-2026-edition.jpg",
+    "backdrop_image": "movies/backdrops/dune-part-two-2026-edition.jpg",
+    "poster_path": "/media/movies/posters/dune-part-two-2026-edition.jpg",
+    "backdrop_path": "/media/movies/backdrops/dune-part-two-2026-edition-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/dune-part-two-2026-edition.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/dune-part-two-2026-edition-backdrop.jpg"
+  },
+  {
+    "id": 22,
+    "title": "12th Fail (2026 Special Edition)",
+    "poster": "movies/posters/12th-fail-2026-special-edition.jpg",
+    "backdrop_image": "movies/backdrops/12th-fail-2026-special-edition.jpg",
+    "poster_path": "/media/movies/posters/12th-fail-2026-special-edition.jpg",
+    "backdrop_path": "/media/movies/backdrops/12th-fail-2026-special-edition-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/2026/posters/12th-fail-2026-special-edition.jpg",
+    "tmdb_backdrop_url": "/media/movies/2026/backdrops/12th-fail-2026-special-edition-backdrop.jpg"
+  },
+  {
+    "id": 8,
+    "title": "Kantara: Chapter 1",
+    "poster": "movies/posters/kantara-chapter-1.jpg",
+    "backdrop_image": "movies/backdrops/kantara-chapter-1.jpg",
+    "poster_path": "/media/movies/posters/kantara-chapter-1.jpg",
+    "backdrop_path": "/media/movies/backdrops/kantara-chapter-1-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/kantara_chapter_1.jpeg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/kantara-chapter-1.jpg"
+  },
+  {
+    "id": 18,
+    "title": "Kalki 2898 AD",
+    "poster": "movies/posters/kalki-2898-ad.jpg",
+    "backdrop_image": "movies/backdrops/kalki-2898-ad.jpg",
+    "poster_path": "/media/movies/posters/kalki-2898-ad.jpg",
+    "backdrop_path": "/media/movies/backdrops/kalki-2898-ad-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/kalki_2898_ad.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/kalki-2898-ad.jpg"
+  },
+  {
+    "id": 2,
+    "title": "Dune: Part Two",
+    "poster": "movies/posters/dune-part-two.jpg",
+    "backdrop_image": "movies/backdrops/dune-part-two.jpg",
+    "poster_path": "/media/movies/posters/dune-part-two.jpg",
+    "backdrop_path": "/media/movies/backdrops/dune-part-two-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/dune-part-two.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/dune-part-two.jpg"
+  },
+  {
+    "id": 11,
+    "title": "Salaar",
+    "poster": "movies/posters/salaar.jpg",
+    "backdrop_image": "movies/backdrops/salaar.jpg",
+    "poster_path": "/media/movies/posters/salaar.jpg",
+    "backdrop_path": "/media/movies/backdrops/salaar-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/salaar.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/salaar.jpg"
+  },
+  {
+    "id": 17,
+    "title": "Salaar: Part 1 - Ceasefire",
+    "poster": "movies/posters/salaar-part-1-ceasefire.jpg",
+    "backdrop_image": "movies/backdrops/salaar-part-1-ceasefire.jpg",
+    "poster_path": "/media/movies/posters/salaar-part-1-ceasefire.jpg",
+    "backdrop_path": "/media/movies/backdrops/salaar-part-1-ceasefire-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/salaar.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/salaar.jpg"
+  },
+  {
+    "id": 15,
+    "title": "12th Fail",
+    "poster": "movies/posters/12th-fail.jpg",
+    "backdrop_image": "movies/backdrops/12th-fail.jpg",
+    "poster_path": "/media/movies/posters/12th-fail.jpg",
+    "backdrop_path": "/media/movies/backdrops/12th-fail-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/12th_fail.jpeg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/12th-fail.jpg"
+  },
+  {
+    "id": 10,
+    "title": "Leo",
+    "poster": "movies/posters/leo.jpg",
+    "backdrop_image": "movies/backdrops/leo.jpg",
+    "poster_path": "/media/movies/posters/leo.jpg",
+    "backdrop_path": "/media/movies/backdrops/leo-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/leo.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/leo.jpg"
+  },
+  {
+    "id": 9,
+    "title": "Jawan",
+    "poster": "movies/posters/jawan.jpg",
+    "backdrop_image": "movies/backdrops/jawan.jpg",
+    "poster_path": "/media/movies/posters/jawan.jpg",
+    "backdrop_path": "/media/movies/backdrops/jawan-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/jawan.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/jawan.jpg"
+  },
+  {
+    "id": 5,
+    "title": "Barbie",
+    "poster": "movies/posters/barbie.jpg",
+    "backdrop_image": "movies/backdrops/barbie.jpg",
+    "poster_path": "/media/movies/posters/barbie.jpg",
+    "backdrop_path": "/media/movies/backdrops/barbie-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/barbie.jpg"
+  },
+  {
+    "id": 1,
+    "title": "Oppenheimer",
+    "poster": "movies/posters/oppenheimer.jpg",
+    "backdrop_image": "movies/backdrops/oppenheimer.jpg",
+    "poster_path": "/media/movies/posters/oppenheimer.jpg",
+    "backdrop_path": "/media/movies/backdrops/oppenheimer-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/oppenheimer.jpg"
+  },
+  {
+    "id": 3,
+    "title": "John Wick: Chapter 4",
+    "poster": "movies/posters/john-wick-chapter-4.jpg",
+    "backdrop_image": "movies/backdrops/john-wick-chapter-4.jpg",
+    "poster_path": "/media/movies/posters/john-wick-chapter-4.jpg",
+    "backdrop_path": "/media/movies/backdrops/john-wick-chapter-4-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/john-wick-chapter-4.jpg"
+  },
+  {
+    "id": 4,
+    "title": "Top Gun: Maverick",
+    "poster": "movies/posters/top-gun-maverick.jpg",
+    "backdrop_image": "movies/backdrops/top-gun-maverick.jpg",
+    "poster_path": "/media/movies/posters/top-gun-maverick.jpg",
+    "backdrop_path": "/media/movies/backdrops/top-gun-maverick-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/top-gun-maverick.jpg"
+  },
+  {
+    "id": 12,
+    "title": "KGF: Chapter 2",
+    "poster": "movies/posters/kgf-chapter-2.jpg",
+    "backdrop_image": "movies/backdrops/kgf-chapter-2.jpg",
+    "poster_path": "/media/movies/posters/kgf-chapter-2.jpg",
+    "backdrop_path": "/media/movies/backdrops/kgf-chapter-2-backdrop.jpg",
+    "tmdb_poster_url": "/media/movies/posters/kgf_chapter_2.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/kgf-chapter-2.jpg"
+  },
+  {
+    "id": 13,
+    "title": "Interstellar",
+    "poster": "movies/posters/interstellar.jpg",
+    "backdrop_image": "movies/backdrops/interstellar.jpg",
+    "poster_path": "/media/movies/posters/interstellar.jpg",
+    "backdrop_path": "/media/movies/backdrops/interstellar-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/interstellar.jpg"
+  },
+  {
+    "id": 14,
+    "title": "The Dark Knight",
+    "poster": "movies/posters/the-dark-knight.jpg",
+    "backdrop_image": "movies/backdrops/the-dark-knight.jpg",
+    "poster_path": "/media/movies/posters/the-dark-knight.jpg",
+    "backdrop_path": "/media/movies/backdrops/the-dark-knight-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/the-dark-knight.jpg"
+  },
+  {
+    "id": 16,
+    "title": "The Shawshank Redemption",
+    "poster": "movies/posters/the-shawshank-redemption.jpg",
+    "backdrop_image": "movies/backdrops/the-shawshank-redemption.jpg",
+    "poster_path": "/media/movies/posters/the-shawshank-redemption.jpg",
+    "backdrop_path": "/media/movies/backdrops/the-shawshank-redemption-backdrop.jpg",
+    "tmdb_poster_url": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+    "tmdb_backdrop_url": "/media/movies/backdrops/the-shawshank-redemption.jpg"
+  }
+]

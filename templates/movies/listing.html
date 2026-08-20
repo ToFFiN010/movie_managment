@@ -1,301 +1,461 @@
 {% extends 'base.html' %}
 
-{% block title %}CinePrime — Professional Cinema Dashboard{% endblock %}
+{% block title %}ALL MOVIES — CinePrime Complete Collection{% endblock %}
 
 {% block content %}
+<!-- 🎬 PAGE HEADER & DISCOVERY TOP BAR -->
+<div class="glass-card p-3 p-md-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="brand-font display-6 text-white mb-1"><i class="fa-solid fa-film text-warning me-2"></i>ALL MOVIES</h2>
+            <p class="text-secondary small mb-0">Explore our complete movie collection</p>
+        </div>
+        <span id="match-count-badge" class="badge bg-warning text-dark fs-6 px-3 py-2 fw-bold">
+            {% if total_found > 0 %}
+                Showing {{ movies_page.start_index }}–{{ movies_page.end_index }} of {{ total_found }} Movies
+            {% else %}
+                0 Movies Found
+            {% endif %}
+        </span>
+    </div>
+
+    <form id="discovery-filter-form" method="GET" action="{% url 'movies:all_movies' %}">
+        <div class="row g-3 align-items-center">
+            <!-- Search Box -->
+            <div class="col-lg-6 col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="q" id="search-input" class="form-control bg-dark text-white border-secondary" placeholder="Search movies, directors, cast..." value="{{ q }}" aria-label="Search movies...">
+                    {% if q %}
+                        <a href="{% url 'movies:all_movies' %}" id="clear-search-btn" class="btn btn-outline-secondary" title="Clear Search" aria-label="Clear search query"><i class="fa-solid fa-xmark"></i></a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-cinema-gold fw-bold px-4">Search</button>
+                </div>
+            </div>
+
+            <!-- Sort By Selector -->
+            <div class="col-lg-4 col-md-4">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted fw-bold text-nowrap mb-0"><i class="fa-solid fa-arrow-down-short-wide text-warning me-1"></i>Sort:</label>
+                    <select name="sort" id="sort-select" class="form-select form-select-sm bg-dark text-white border-secondary" aria-label="Sort movies by">
+                        <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest Releases</option>
+                        <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Oldest Releases</option>
+                        <option value="rating" {% if selected_sort == 'rating' or selected_sort == 'highest_rated' %}selected{% endif %}>Highest Rated</option>
+                        <option value="popular" {% if selected_sort == 'popular' %}selected{% endif %}>Most Popular</option>
+                        <option value="title_asc" {% if selected_sort == 'title_asc' or selected_sort == 'a_z' %}selected{% endif %}>A - Z</option>
+                        <option value="title_desc" {% if selected_sort == 'title_desc' or selected_sort == 'z_a' %}selected{% endif %}>Z - A</option>
+                        <option value="price_low" {% if selected_sort == 'price_low' or selected_sort == 'lowest_price' %}selected{% endif %}>Lowest Ticket Price</option>
+                        <option value="price_high" {% if selected_sort == 'price_high' or selected_sort == 'highest_price' %}selected{% endif %}>Highest Ticket Price</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Mobile Filter Toggle Button -->
+            <div class="col-lg-2 d-flex justify-content-end align-items-center">
+                <button type="button" class="btn btn-outline-warning btn-sm d-lg-none w-100" data-bs-toggle="offcanvas" data-bs-target="#filterDrawer" aria-label="Open filter drawer">
+                    <i class="fa-solid fa-sliders me-1"></i> Filters
+                </button>
+            </div>
+        </div>
+
+        <input type="hidden" name="ajax" value="1">
+    </form>
+</div>
+
 <div class="row g-4">
-
-    <!-- MAIN CENTRAL CONTENT CANVAS (Flexible ~70% width) -->
-    <div class="col-xl-9 col-lg-8">
-
-        <!-- SEARCH / FILTER ACTIVE NOTIFICATION -->
-        {% if total_found is not None %}
-            <div class="d-flex justify-content-between align-items-center mb-4 cinema-card">
-                <h5 class="mb-0 text-white"><i class="fa-solid fa-list-check text-warning me-2"></i>Filter Results</h5>
-                <span class="badge bg-warning text-dark fs-6">{{ total_found }} Movies Found</span>
+    <!-- 🎛️ DESKTOP FILTER SIDEBAR (~25% width) -->
+    <div class="col-lg-3 d-none d-lg-block">
+        <div class="glass-card p-4 sticky-top" style="top: 90px; z-index: 10;">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
+                <h5 class="brand-font text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i>Filters</h5>
+                <a href="{% url 'movies:all_movies' %}" class="btn btn-link text-warning p-0 small text-decoration-none fw-bold">Clear All</a>
             </div>
-            <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mb-5">
-                {% for movie in movies %}
-                    {% include 'movies/_movie_card.html' with movie=movie %}
-                {% empty %}
-                    <div class="col-12 text-center py-5 text-muted">
-                        <i class="fa-solid fa-film fs-1 mb-3"></i>
-                        <p>No movies matched your filter criteria.</p>
+
+            <form id="sidebar-filter-form" method="GET" action="{% url 'movies:all_movies' %}">
+                {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+                <input type="hidden" name="sort" value="{{ selected_sort }}">
+
+                <!-- Movie Status Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Movie Status</label>
+                    <select name="status" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">All Statuses</option>
+                        <option value="NOW_SHOWING" {% if selected_status == 'NOW_SHOWING' %}selected{% endif %}>Now Showing</option>
+                        <option value="UPCOMING" {% if selected_status == 'UPCOMING' %}selected{% endif %}>Upcoming</option>
+                        <option value="RELEASED" {% if selected_status == 'RELEASED' %}selected{% endif %}>Released</option>
+                        <option value="ENDED" {% if selected_status == 'ENDED' %}selected{% endif %}>Ended</option>
+                    </select>
+                </div>
+
+                <!-- Genre Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Genre</label>
+                    <select name="genre" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">All Genres</option>
+                        {% for g in genres %}
+                            <option value="{{ g.slug }}" {% if selected_genre == g.slug or selected_genre == g.id|stringformat:'s' %}selected{% endif %}>{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Language Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Language</label>
+                    <select name="language" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">All Languages</option>
+                        {% for lang in languages %}
+                            <option value="{{ lang.code }}" {% if selected_language == lang.code or selected_language == lang.name or selected_language == lang.id|stringformat:'s' %}selected{% endif %}>{{ lang.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- City Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">City</label>
+                    <select name="city" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">All Cities</option>
+                        {% for c in cities %}
+                            <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Theater Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Theater</label>
+                    <select name="theater" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">All Theaters</option>
+                        {% for t in theaters %}
+                            <option value="{{ t.id }}" {% if selected_theater == t.id|stringformat:'s' %}selected{% endif %}>{{ t.name }} ({{ t.city }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Release Date Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Release Date</label>
+                    <select name="release_date" class="form-select form-select-sm bg-dark text-white border-secondary filter-input" id="release-date-select">
+                        <option value="all" {% if selected_release_date == 'all' or not selected_release_date %}selected{% endif %}>All Releases</option>
+                        <option value="today" {% if selected_release_date == 'today' %}selected{% endif %}>Today</option>
+                        <option value="this_week" {% if selected_release_date == 'this_week' %}selected{% endif %}>This Week</option>
+                        <option value="this_month" {% if selected_release_date == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="this_year" {% if selected_release_date == 'this_year' %}selected{% endif %}>This Year (2026)</option>
+                        <option value="upcoming" {% if selected_release_date == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="custom" {% if release_from or release_to %}selected{% endif %}>Custom Date Range</option>
+                    </select>
+
+                    <div id="custom-date-range" class="mt-2 {% if not release_from and not release_to %}d-none{% endif %}">
+                        <div class="mb-1">
+                            <span class="small text-muted">From:</span>
+                            <input type="date" name="release_from" class="form-control form-control-sm bg-dark text-white border-secondary filter-input" value="{{ release_from }}">
+                        </div>
+                        <div>
+                            <span class="small text-muted">To:</span>
+                            <input type="date" name="release_to" class="form-control form-control-sm bg-dark text-white border-secondary filter-input" value="{{ release_to }}">
+                        </div>
                     </div>
-                {% endfor %}
-            </div>
-        {% else %}
+                </div>
 
-            <!-- 🎬 MAIN HERO BANNER SLIDER -->
-            {% if hero_movies %}
-            <div id="heroMovieCarousel" class="carousel slide hero-slider-card mb-4" data-bs-ride="carousel" style="border-radius: 18px; overflow: hidden; position: relative;">
-                <div class="carousel-inner" style="border-radius: 18px; overflow: hidden;">
-                    {% for movie in hero_movies %}
-                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <div class="hero-slider-card position-relative w-100" style="height: 380px; overflow: hidden; border-radius: 18px;">
-                                <!-- Hero Background Image (Fills 100% Box Cover) -->
-                                <img src="{{ movie.get_backdrop_url }}" alt="{{ movie.title }}" 
-                                     {% if forloop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async"
-                                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: 1; display: block; filter: brightness(0.92) contrast(1.05) saturate(1.05);" 
-                                     onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';">
-                                
-                                <!-- Dark Gradient Overlay for Readability -->
-                                <div class="hero-overlay-dark p-4 p-md-5" 
-                                     style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.75) 35%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.15) 100%); z-index: 2; display: flex; flex-direction: column; justify-content: center;">
-                                    
-                                    <div class="row align-items-center h-100" style="position: relative; z-index: 3;">
-                                        <div class="col-lg-8">
-                                            <div class="hero-meta-badge mb-2">
-                                                <i class="fa-solid fa-ticket text-warning"></i> NOW PLAYING IN CINEMAS
-                                            </div>
-                                            <h1 class="display-4 fw-extrabold text-white mb-2" style="font-weight: 800; letter-spacing: -0.02em;">{{ movie.title }}</h1>
-                                            
-                                            <div class="d-flex align-items-center gap-2 flex-wrap mb-3 text-secondary small fw-semibold">
-                                                <span class="badge bg-warning text-dark fw-bold px-2 py-1"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating|default:"8.7" }}/10</span>
-                                                <span class="badge bg-dark border border-secondary text-light">{{ movie.release_date|date:"Y" }}</span>
-                                                <span class="badge bg-dark border border-secondary text-light">{{ movie.duration_minutes }}m</span>
-                                                <span class="badge bg-purple text-white" style="background: rgba(139, 92, 246, 0.3); border: 1px solid rgba(139, 92, 246, 0.5);">{{ movie.age_certification }}</span>
-                                                <span class="badge bg-cyan text-white" style="background: rgba(6, 182, 212, 0.3); border: 1px solid rgba(6, 182, 212, 0.5);">{{ movie.language.name }}</span>
-                                                {% for g in movie.genres.all|slice:":3" %}
-                                                    <span class="badge bg-dark border border-secondary text-secondary">{{ g.name }}</span>
-                                                {% endfor %}
-                                            </div>
+                <!-- Minimum Rating Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Minimum Rating</label>
+                    <select name="rating" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">Any Rating</option>
+                        <option value="9" {% if selected_rating == '9' %}selected{% endif %}>⭐ 9.0+ Top Blockbusters</option>
+                        <option value="8" {% if selected_rating == '8' %}selected{% endif %}>⭐ 8.0+ Highly Rated</option>
+                        <option value="7" {% if selected_rating == '7' %}selected{% endif %}>⭐ 7.0+ Good Movies</option>
+                        <option value="6" {% if selected_rating == '6' %}selected{% endif %}>⭐ 6.0+ Above Average</option>
+                    </select>
+                </div>
 
-                                            <p class="text-light opacity-75 mb-4 d-none d-md-block" style="max-width: 580px; font-size: 0.92rem; line-height: 1.6;">
-                                                {{ movie.short_description|default:movie.description|truncatewords:25 }}
-                                            </p>
+                <!-- Show Timing Filter -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Show Timing</label>
+                    <select name="timing" class="form-select form-select-sm bg-dark text-white border-secondary filter-input">
+                        <option value="all">Any Showtime</option>
+                        <option value="morning" {% if selected_timing == 'morning' %}selected{% endif %}>Morning (06:00 - 12:00)</option>
+                        <option value="afternoon" {% if selected_timing == 'afternoon' %}selected{% endif %}>Afternoon (12:00 - 17:00)</option>
+                        <option value="evening" {% if selected_timing == 'evening' %}selected{% endif %}>Evening (17:00 - 21:00)</option>
+                        <option value="night" {% if selected_timing == 'night' %}selected{% endif %}>Night (21:00 - 02:00)</option>
+                    </select>
+                </div>
 
-                                            <div class="d-flex gap-3 flex-wrap">
-                                                <a href="{% url 'bookings:booking_movie' movie.id %}" class="btn btn-purple btn-md fw-bold px-4">
-                                                    <i class="fa-solid fa-ticket me-1"></i> Book Tickets
-                                                </a>
+                <!-- Price Range Filter -->
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold mb-1">Ticket Price Range (₹)</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="number" name="min_price" class="form-control form-control-sm bg-dark text-white border-secondary filter-input" placeholder="Min ₹" value="{{ min_price }}" min="0">
+                        <span class="text-muted">-</span>
+                        <input type="number" name="max_price" class="form-control form-control-sm bg-dark text-white border-secondary filter-input" placeholder="Max ₹" value="{{ max_price }}" min="0">
+                    </div>
+                </div>
 
-                                                {% if movie.trailer_url %}
-                                                    <button class="btn btn-dark-outline btn-md fw-semibold px-4" 
-                                                            data-open-modal="trailer"
-                                                            data-title="{{ movie.title }}"
-                                                            data-trailer="{{ movie.trailer_url }}">
-                                                        <i class="fa-solid fa-play me-1 text-cyan"></i> Watch Trailer
-                                                    </button>
-                                                {% endif %}
-                                            </div>
-                                        </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-cinema-gold btn-sm fw-bold py-2">
+                        <i class="fa-solid fa-filter me-1"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'movies:all_movies' %}" class="btn btn-outline-secondary btn-sm py-1 fw-semibold">Reset All</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                                        <!-- Floating Glass Info Badge Card -->
-                                        <div class="col-lg-4 d-none d-lg-flex flex-column align-items-end justify-content-center">
-                                            <div class="p-3 text-start cinema-card" style="background: rgba(15, 23, 34, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(139, 92, 246, 0.3); width: 220px;">
-                                                <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <i class="fa-solid fa-film fs-4 text-warning"></i>
-                                                    <div>
-                                                        <div class="fw-bold small text-white">IMAX 3D / 4K</div>
-                                                        <div class="text-secondary" style="font-size: 0.72rem;">Dolby Atmos Sound</div>
-                                                    </div>
-                                                </div>
-                                                <div class="pt-2 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center small">
-                                                    <span class="text-secondary">Director</span>
-                                                    <strong class="text-white text-truncate max-w-100" style="max-width: 110px;">{{ movie.director|default:"N/A" }}</strong>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+    <!-- 🍿 MAIN MOVIE RESULTS CANVAS -->
+    <div class="col-lg-9">
+        <div id="movie-grid-container">
+            {% include 'movies/_movie_cards_grid.html' with movies_page=movies_page encoded_params=encoded_params %}
+        </div>
+
+        <!-- 🌟 RECOMMENDED FOR YOU PANEL -->
+        {% if recommendations %}
+            <div class="mt-5 pt-4 border-top border-secondary">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="brand-font text-white mb-0"><i class="fa-solid fa-sparkles text-warning me-2"></i>Recommended for You</h4>
+                        <p class="small text-muted mb-0">Personalized selection based on your viewing and booking preferences</p>
+                    </div>
+                </div>
+
+                <div class="row g-3 g-md-4">
+                    {% for rec in recommendations %}
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="glass-card h-100 p-2 d-flex flex-column text-center position-relative border-secondary">
+                                {% if rec.recommendation_reason %}
+                                    <span class="badge bg-purple text-white mb-2 text-truncate" style="font-size: 0.62rem; background: rgba(139, 92, 246, 0.4);" title="{{ rec.recommendation_reason }}">
+                                        {{ rec.recommendation_reason }}
+                                    </span>
+                                {% endif %}
+                                <a href="{% url 'movies:detail' rec.slug %}" class="text-decoration-none">
+                                    <img src="{{ rec.get_poster_url }}" alt="{{ rec.title }} poster" class="img-fluid rounded mb-2 shadow-sm" style="aspect-ratio: 2/3; object-fit: cover; width: 100%;">
+                                    <h6 class="text-white small fw-bold text-truncate mb-1">{{ rec.title }}</h6>
+                                </a>
+                                <div class="mt-auto small text-warning fw-bold" style="font-size: 0.75rem;">
+                                    ⭐ {{ rec.average_rating|default:"8.5" }}
                                 </div>
                             </div>
                         </div>
                     {% endfor %}
                 </div>
-
-
-                <!-- Carousel Controls & Indicators -->
-                <button class="carousel-control-prev" type="button" data-bs-target="#heroMovieCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#heroMovieCarousel" data-bs-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                </button>
             </div>
-            {% endif %}
-
-            <!-- 🔥 TRENDING NOW SECTION -->
-            {% if trending %}
-            <div class="mb-5 horizontal-scroll-container">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-fire text-warning me-2"></i>Trending Now</h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="scroll-arrow-btn scroll-left-btn" type="button" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button class="scroll-arrow-btn scroll-right-btn" type="button" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
-                        <a href="{% url 'movies:listing' %}" class="text-warning text-decoration-none small fw-semibold ms-2">View All <i class="fa-solid fa-chevron-right ms-1 fs-7"></i></a>
-                    </div>
-                </div>
-                <div class="horizontal-scroll-row">
-                    {% for movie in trending %}
-                        <div class="movie-card-wrap">
-                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- 🎬 NOW SHOWING SECTION -->
-            <div class="mb-5 horizontal-scroll-container">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-film text-warning me-2"></i>Now Showing</h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="scroll-arrow-btn scroll-left-btn" type="button" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button class="scroll-arrow-btn scroll-right-btn" type="button" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
-                        <a href="?status=NOW_SHOWING" class="text-warning text-decoration-none small fw-semibold ms-2">View All <i class="fa-solid fa-chevron-right ms-1 fs-7"></i></a>
-                    </div>
-                </div>
-                <div class="horizontal-scroll-row">
-                    {% for movie in now_showing %}
-                        <div class="movie-card-wrap">
-                            {% include 'movies/_movie_card.html' with movie=movie show_badge=True card_index=forloop.counter0 %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- 📅 UPCOMING MOVIES SECTION -->
-            <div class="mb-5 horizontal-scroll-container">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-calendar-days text-warning me-2"></i>Upcoming Movies</h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="scroll-arrow-btn scroll-left-btn" type="button" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button class="scroll-arrow-btn scroll-right-btn" type="button" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
-                        <a href="?status=UPCOMING" class="text-warning text-decoration-none small fw-semibold ms-2">View All <i class="fa-solid fa-chevron-right ms-1 fs-7"></i></a>
-                    </div>
-                </div>
-                <div class="horizontal-scroll-row">
-                    {% for movie in upcoming %}
-                        <div class="movie-card-wrap">
-                            {% include 'movies/_movie_card.html' with movie=movie card_index=forloop.counter0 %}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-
         {% endif %}
     </div>
+</div>
 
-    <!-- RIGHT SIDEBAR (Quick Booking, Offers, Top Rated ~300px) -->
-    <div class="col-xl-3 col-lg-4 d-none d-lg-block">
-        
-        <!-- QUICK BOOKING PANEL -->
-        <div class="quick-booking-panel mb-4">
-            <h6 class="fw-bold text-white mb-3"><i class="fa-solid fa-ticket text-warning me-2"></i>QUICK BOOKING</h6>
-            
-            <form id="quickBookingForm">
-                <div class="mb-2">
-                    <label class="small text-muted mb-1">Select Movie</label>
-                    <select class="quick-booking-select" id="quickMovieSelect">
-                        <option value="">Choose Movie...</option>
-                        {% for m in movies %}
-                            <option value="{{ m.id }}">{{ m.title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+<!-- 📱 MOBILE FILTER OFFCANVAS DRAWER -->
+<div class="offcanvas offcanvas-start bg-dark text-white border-secondary" tabindex="-1" id="filterDrawer" aria-labelledby="filterDrawerLabel">
+    <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title brand-font text-warning" id="filterDrawerLabel"><i class="fa-solid fa-sliders me-2"></i>Filter Movies</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form method="GET" action="{% url 'movies:all_movies' %}">
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+            <input type="hidden" name="sort" value="{{ selected_sort }}">
 
-                <div class="mb-2">
-                    <label class="small text-muted mb-1">Select Theater</label>
-                    <select class="quick-booking-select" id="quickTheaterSelect" disabled>
-                        <option value="">Choose Theater...</option>
-                        {% for t in theaters %}
-                            <option value="{{ t.id }}">{{ t.name }} ({{ t.city }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="mb-2">
-                    <label class="small text-muted mb-1">Select Date</label>
-                    <select class="quick-booking-select" id="quickDateSelect" disabled>
-                        <option value="">Choose Date...</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="small text-muted mb-1">Select Showtime</label>
-                    <select class="quick-booking-select" id="quickShowSelect" disabled>
-                        <option value="">Choose Showtime...</option>
-                    </select>
-                </div>
-
-                <button type="button" class="btn btn-gold w-100 py-2 text-dark font-semibold" onclick="proceedQuickBooking()">
-                    Book Tickets <i class="fa-solid fa-arrow-right ms-1"></i>
-                </button>
-            </form>
-        </div>
-
-
-        <!-- OFFERS & DEALS CARD -->
-        <div class="cinema-card mb-4" style="background: linear-gradient(135deg, #151E29 0%, #0D131C 100%); border-color: rgba(255, 176, 0, 0.3);">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">OFFERS & DEALS</span>
-                <span class="text-muted small">CINE20</span>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Movie Status</label>
+                <select name="status" class="form-select bg-dark text-white border-secondary">
+                    <option value="all">All Statuses</option>
+                    <option value="NOW_SHOWING" {% if selected_status == 'NOW_SHOWING' %}selected{% endif %}>Now Showing</option>
+                    <option value="UPCOMING" {% if selected_status == 'UPCOMING' %}selected{% endif %}>Upcoming</option>
+                    <option value="RELEASED" {% if selected_status == 'RELEASED' %}selected{% endif %}>Released</option>
+                    <option value="ENDED" {% if selected_status == 'ENDED' %}selected{% endif %}>Ended</option>
+                </select>
             </div>
-            <h6 class="fw-bold text-white mb-1">Flat 20% OFF</h6>
-            <p class="small text-muted mb-2">Up to $15 on movie tickets with Code <strong>CINE20</strong></p>
-            <span class="text-warning small fw-semibold">Use Code: <strong>CINE20</strong></span>
-        </div>
 
-        <!-- TOP RATED MOVIES LIST -->
-        <div class="cinema-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-white mb-0"><i class="fa-solid fa-star text-warning me-2"></i>TOP RATED MOVIES</h6>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Genre</label>
+                <select name="genre" class="form-select bg-dark text-white border-secondary">
+                    <option value="all">All Genres</option>
+                    {% for g in genres %}
+                        <option value="{{ g.slug }}" {% if selected_genre == g.slug or selected_genre == g.id|stringformat:'s' %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            
-            <div class="top-rated-list">
-                {% for m in top_rated|slice:":4" %}
-                    <div class="top-rated-item" style="cursor: pointer;"
-                         data-open-modal="details"
-                         data-id="{{ m.id }}"
-                         data-title="{{ m.title }}"
-                         data-poster="{{ m.get_poster_url }}"
-                         data-backdrop="{{ m.get_backdrop_url }}"
-                         data-rating="{{ m.average_rating|default:'8.6' }}"
-                         data-year="{{ m.release_date|date:'Y' }}"
-                         data-duration="{{ m.duration_minutes }}"
-                         data-age="{{ m.age_certification }}"
-                         data-lang="{{ m.language.name }}"
-                         data-director="{{ m.director }}"
-                         data-description="{{ m.description }}"
-                         data-genres="{% for g in m.genres.all %}{{ g.name }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                         data-trailer="{{ m.trailer_url|default:'' }}"
-                         data-book-url="{% if m.shows.exists %}{% url 'bookings:seat_selection' m.shows.first.id %}{% else %}{% url 'movies:detail' slug=m.slug %}{% endif %}">
-                        <img src="{{ m.get_poster_url }}" class="top-rated-thumb" alt="{{ m.title }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/movies/posters/cineprime_default_fallback.png';">
-                        <div class="flex-grow-1 overflow-hidden">
-                            <h6 class="text-white small mb-0 text-truncate" title="{{ m.title }}">
-                                <span class="text-white text-decoration-none">{{ m.title }}</span>
-                            </h6>
-                            <div class="small text-warning fw-bold mt-1">
-                                <i class="fa-solid fa-star fs-7 me-1"></i>{{ m.average_rating|default:"8.6" }}
-                                <span class="text-muted ms-1 font-normal fs-7">• {{ m.duration_minutes }}m</span>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
 
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Language</label>
+                <select name="language" class="form-select bg-dark text-white border-secondary">
+                    <option value="all">All Languages</option>
+                    {% for lang in languages %}
+                        <option value="{{ lang.code }}" {% if selected_language == lang.code or selected_language == lang.name or selected_language == lang.id|stringformat:'s' %}selected{% endif %}>{{ lang.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">City</label>
+                <select name="city" class="form-select bg-dark text-white border-secondary">
+                    <option value="all">All Cities</option>
+                    {% for c in cities %}
+                        <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Theater</label>
+                <select name="theater" class="form-select bg-dark text-white border-secondary">
+                    <option value="all">All Theaters</option>
+                    {% for t in theaters %}
+                        <option value="{{ t.id }}" {% if selected_theater == t.id|stringformat:'s' %}selected{% endif %}>{{ t.name }} ({{ t.city }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Minimum Rating</label>
+                <select name="rating" class="form-select bg-dark text-white border-secondary">
+                    <option value="all">Any Rating</option>
+                    <option value="9" {% if selected_rating == '9' %}selected{% endif %}>⭐ 9.0+ Top Rated</option>
+                    <option value="8" {% if selected_rating == '8' %}selected{% endif %}>⭐ 8.0+ Highly Rated</option>
+                    <option value="7" {% if selected_rating == '7' %}selected{% endif %}>⭐ 7.0+ Good Movies</option>
+                </select>
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-cinema-gold py-2 fw-bold">Apply Filters</button>
+                <a href="{% url 'movies:all_movies' %}" class="btn btn-outline-secondary py-2">Clear Filters</a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function proceedQuickBooking() {
-    const showSelect = document.getElementById('quickShowSelect');
-    const movieSelect = document.getElementById('quickMovieSelect');
-    const showId = showSelect ? showSelect.value : null;
-    const movieId = movieSelect ? movieSelect.value : null;
-
-    if (showId) {
-        window.location.href = "/bookings/seats/" + showId + "/";
-    } else if (movieId) {
-        window.location.href = "/bookings/movie/" + movieId + "/";
-    } else {
-        alert("Please select a movie to proceed with booking.");
+document.addEventListener('DOMContentLoaded', function() {
+    var dateSelect = document.getElementById('release-date-select');
+    var customRange = document.getElementById('custom-date-range');
+    if (dateSelect && customRange) {
+        dateSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customRange.classList.remove('d-none');
+            } else {
+                customRange.classList.add('d-none');
+            }
+        });
     }
-}
+
+    // Skeleton Cards HTML for smooth async loading state
+    function getSkeletonGridHTML() {
+        var skeletonCard = `
+            <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                <div class="glass-card p-3 h-100 d-flex flex-column opacity-75">
+                    <div class="bg-dark rounded-3 mb-3" style="aspect-ratio: 2/3; width: 100%; animation: pulse 1.5s infinite ease-in-out;"></div>
+                    <div class="bg-dark rounded-2 mb-2" style="height: 18px; width: 75%; animation: pulse 1.5s infinite ease-in-out;"></div>
+                    <div class="bg-dark rounded-2 mb-3" style="height: 14px; width: 50%; animation: pulse 1.5s infinite ease-in-out;"></div>
+                    <div class="bg-dark rounded-2 mt-auto" style="height: 32px; width: 100%; animation: pulse 1.5s infinite ease-in-out;"></div>
+                </div>
+            </div>`;
+        return '<div class="row g-3 g-md-4">' + skeletonCard.repeat(8) + '</div>';
+    }
+
+    // Live AJAX Dynamic Filtering Handler
+    function triggerAjaxFilter(pageUrl) {
+        var sidebarForm = document.getElementById('sidebar-filter-form');
+        var discoveryForm = document.getElementById('discovery-filter-form');
+        
+        var formData = new FormData(sidebarForm);
+        var searchVal = document.getElementById('search-input') ? document.getElementById('search-input').value : '';
+        var sortVal = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'newest';
+
+        formData.set('q', searchVal);
+        formData.set('sort', sortVal);
+        formData.set('ajax', '1');
+
+        var params = new URLSearchParams(formData);
+        if (pageUrl) {
+            var urlObj = new URL(pageUrl, window.location.origin);
+            var pageNum = urlObj.searchParams.get('page');
+            if (pageNum) params.set('page', pageNum);
+        }
+
+        var fetchUrl = '{% url "movies:all_movies" %}?' + params.toString();
+
+        var gridContainer = document.getElementById('movie-grid-container');
+        gridContainer.innerHTML = getSkeletonGridHTML();
+
+        fetch(fetchUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                gridContainer.innerHTML = data.html;
+                var badgeEl = document.getElementById('match-count-badge');
+                if (badgeEl) {
+                    if (data.total_found > 0 && data.start_index) {
+                        badgeEl.innerText = 'Showing ' + data.start_index + '–' + data.end_index + ' of ' + data.total_found + ' Movies';
+                    } else {
+                        badgeEl.innerText = data.total_found + ' Movies Found';
+                    }
+                }
+
+                // Update Browser URL without reload
+                params.delete('ajax');
+                var cleanUrl = '{% url "movies:all_movies" %}?' + params.toString();
+                window.history.pushState({path: cleanUrl}, '', cleanUrl);
+
+                bindPaginationClick();
+            }
+        })
+        .catch(err => {
+            gridContainer.style.opacity = '1.0';
+        });
+    }
+
+    function bindPaginationClick() {
+        document.querySelectorAll('#movie-grid-container .pagination a').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                var href = this.getAttribute('href');
+                triggerAjaxFilter(href);
+            });
+        });
+    }
+
+    // Auto-trigger filter on input changes
+    document.querySelectorAll('.filter-input, #sort-select').forEach(function(input) {
+        input.addEventListener('change', function() {
+            triggerAjaxFilter();
+        });
+    });
+
+    // Intercept discovery search form submission
+    var discoveryForm = document.getElementById('discovery-filter-form');
+    if (discoveryForm) {
+        discoveryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            triggerAjaxFilter();
+        });
+    }
+
+    // Debounced live typing search handler
+    var searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        var searchDebounceTimer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                triggerAjaxFilter();
+            }, 250);
+        });
+    }
+
+    // Clear search button handler
+    var clearSearchBtn = document.getElementById('clear-search-btn');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (searchInput) searchInput.value = '';
+            triggerAjaxFilter();
+        });
+    }
+
+    bindPaginationClick();
+});
 </script>
 {% endblock %}
-

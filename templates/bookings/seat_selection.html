@@ -4,100 +4,119 @@
 {% block title %}Select Seats — {{ show.movie.title }}{% endblock %}
 
 {% block content %}
+<input type="hidden" id="show_id_val" value="{{ show.id }}">
 <input type="hidden" id="convenience_fee_val" value="{{ convenience_fee }}">
+<input type="hidden" id="current_user_id" value="{{ user.id }}">
 
-<div class="row g-4">
-    <!-- Seat Grid Container Left -->
-    <div class="col-lg-8">
-        <div class="glass-card p-4 text-center">
-            <div class="d-flex justify-content-between align-items-center mb-3 text-start">
-                <div>
-                    <h4 class="brand-font text-white mb-0">{{ show.movie.title }}</h4>
-                    <p class="text-muted small mb-0"><i class="fa-solid fa-building me-1"></i>{{ show.theater.name }} | {{ show.screen.name }} ({{ show.screen.screen_type }})</p>
-                </div>
-                <span class="badge bg-warning text-dark fs-6">{{ show.show_date|date:"M d, Y" }} @ {{ show.start_time|time:"H:i" }}</span>
-            </div>
+<div class="container-fluid py-4">
+    <!-- Header with Live Timer -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="brand-font text-white mb-1">{{ show.movie.title }}</h2>
+            <p class="text-secondary mb-0">
+                <i class="fa-solid fa-building me-1 text-warning"></i>{{ show.theater.name }} | {{ show.screen.name }} ({{ show.screen.screen_type }})
+                <span class="ms-3"><i class="fa-solid fa-calendar me-1 text-info"></i>{{ show.show_date|date:"M d, Y" }} at {{ show.start_time|time:"H:i" }}</span>
+            </p>
+        </div>
 
-            <!-- Screen Curve Indicator -->
-            <div class="screen-indicator">SCREEN THIS WAY</div>
-
-            <!-- Legend -->
-            <div class="d-flex justify-content-center gap-4 mb-4 small flex-wrap">
-                <div class="d-flex align-items-center gap-1">
-                    <span class="seat-btn AVAILABLE" style="width: 24px; height: 24px;"></span>
-                    <span class="text-muted">Available</span>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="seat-btn SELECTED" style="width: 24px; height: 24px;"></span>
-                    <span class="text-muted">Selected</span>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="seat-btn BOOKED" style="width: 24px; height: 24px;"></span>
-                    <span class="text-muted">Booked</span>
-                </div>
-            </div>
-
-            <!-- Seat Rows Grid -->
-            <div class="seat-map-container py-3">
-                {% for row, seats in seat_grid.items %}
-                    <div class="seat-row">
-                        <span class="row-label">{{ row }}</span>
-                        {% for seat in seats %}
-                            <button type="button" 
-                                    class="seat-btn {{ seat.status }} {{ seat.seat_type }}" 
-                                    data-id="{{ seat.id }}"
-                                    data-label="{{ seat.label }}"
-                                    data-price="{{ seat.price }}"
-                                    {% if seat.status == 'BOOKED' %}disabled{% endif %}>
-                                {{ seat.number }}
-                            </button>
-                        {% endfor %}
-                        <span class="row-label">{{ row }}</span>
-                    </div>
-                {% endfor %}
-            </div>
+        <div id="timer_badge" class="timer-badge-container d-none">
+            <i class="fa-solid fa-stopwatch fa-spin text-warning"></i>
+            <span>Seats held for: <span id="timer_countdown" class="text-white">02:00</span></span>
         </div>
     </div>
 
-    <!-- Booking Summary Sidebar Right -->
-    <div class="col-lg-4">
-        <div class="glass-card p-4">
-            <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-receipt text-warning me-2"></i>Booking Summary</h5>
-            
-            <div class="mb-3 border-bottom border-secondary pb-3">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Show Ticket Base Price:</span>
-                    <span class="text-white fw-bold">${{ base_price }}</span>
+    <div class="row g-4">
+        <!-- Seat Map Area -->
+        <div class="col-lg-8">
+            <div class="cinema-card p-4 text-center">
+                <!-- Cinema Screen Indicator -->
+                <div class="cinema-screen-container">
+                    <div class="cinema-screen"></div>
+                    <div class="cinema-screen-text"><i class="fa-solid fa-tv me-2"></i>CINEMA SCREEN THIS WAY</div>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Selected Seats:</span>
-                    <span id="selected_seats_display" class="text-warning fw-bold">None</span>
+
+                <!-- Status Legend -->
+                <div class="d-flex justify-content-center gap-4 mb-4 small flex-wrap">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="seat-btn status-AVAILABLE" style="width: 24px; height: 24px; pointer-events: none;"></span>
+                        <span class="text-secondary">Available</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="seat-btn status-SELECTED_BY_ME selected" style="width: 24px; height: 24px; pointer-events: none;"></span>
+                        <span class="text-secondary">Selected</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="seat-btn status-RESERVED" style="width: 24px; height: 24px; pointer-events: none;"></span>
+                        <span class="text-secondary">Held by someone else</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="seat-btn status-BOOKED" style="width: 24px; height: 24px; pointer-events: none;"></span>
+                        <span class="text-secondary">Booked</span>
+                    </div>
+                </div>
+
+                <!-- Seat Grid -->
+                <div class="seat-map-container py-3">
+                    {% for row, seats in seat_grid.items %}
+                        <div class="seat-row mb-2">
+                            <span class="seat-row-label">{{ row }}</span>
+                            {% for seat in seats %}
+                                <button type="button" 
+                                        class="seat-btn status-{{ seat.status }}" 
+                                        data-id="{{ seat.id }}"
+                                        data-label="{{ seat.label }}"
+                                        data-price="{{ seat.price }}"
+                                        {% if seat.status == 'BOOKED' or seat.status == 'RESERVED' %}disabled{% endif %}>
+                                    {{ seat.number }}
+                                </button>
+                            {% endfor %}
+                            <span class="seat-row-label">{{ row }}</span>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
+        </div>
 
-            <div class="mb-4">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Subtotal:</span>
-                    <span id="subtotal_display" class="text-white">$0.00</span>
+        <!-- Sticky Checkout Summary -->
+        <div class="col-lg-4">
+            <div class="cinema-card sticky-top" style="top: 80px;">
+                <h5 class="brand-font text-white mb-3"><i class="fa-solid fa-ticket text-warning me-2"></i>Booking Summary</h5>
+                
+                <div class="mb-3 border-bottom border-secondary pb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Ticket Price:</span>
+                        <span class="text-white fw-bold">${{ base_price }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Selected Seats:</span>
+                        <span id="selected_seats_display" class="text-warning fw-bold">None</span>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Convenience Fee:</span>
-                    <span id="convenience_display" class="text-white">$0.00</span>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Subtotal:</span>
+                        <span id="subtotal_display" class="text-white">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Convenience Fee:</span>
+                        <span id="convenience_display" class="text-white">$0.00</span>
+                    </div>
+                    <hr class="border-secondary">
+                    <div class="d-flex justify-content-between fs-5 fw-bold">
+                        <span class="text-white">Total Amount:</span>
+                        <span id="total_display" class="text-warning">$0.00</span>
+                    </div>
                 </div>
-                <hr class="border-secondary">
-                <div class="d-flex justify-content-between fs-5 fw-bold">
-                    <span class="text-white">Total Amount:</span>
-                    <span id="total_display" class="text-warning">$0.00</span>
-                </div>
+
+                <form method="POST" action="{% url 'bookings:create_booking' show.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_seats" id="selected_seats_input" value="">
+                    <button type="submit" id="proceed_checkout_btn" class="btn btn-gold w-100 py-3 fw-bold" disabled>
+                        Proceed to Checkout <i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
             </div>
-
-            <form method="POST" action="{% url 'bookings:create_booking' show.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="selected_seats" id="selected_seats_input" value="">
-                <button type="submit" id="proceed_checkout_btn" class="btn btn-cinema-gold w-100 py-3 fw-bold" disabled>
-                    Proceed to Checkout <i class="fa-solid fa-arrow-right ms-1"></i>
-                </button>
-            </form>
         </div>
     </div>
 </div>
